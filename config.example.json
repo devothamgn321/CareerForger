@@ -1,0 +1,75 @@
+{
+  "pipeline_dir": ".",
+  "db_path": "ledger.sqlite",
+  "applications_dir": "private/applications",
+  "target_companies": "examples/TARGET_COMPANIES.example.csv",
+  "scouting_dir": "private/scouting",
+  "evidence_pack": "private/EVIDENCE_PACK.md",
+  "personal_data_sheet": "private/PERSONAL_DATA_SHEET.md",
+  "chassis": "private/CHASSIS_main.tex",
+  "candidate_filename_prefix": "Candidate_Name",
+  "staging_export_dir": "~/Downloads",
+  "bases": {
+    "aipm": "private/bases/BASE_P1_AIPM.tex",
+    "pm": "private/bases/BASE_P1_PM.tex",
+    "tpm": "private/bases/BASE_P1_TPM.tex",
+    "productops": "private/bases/BASE_P1_PRODUCTOPS.tex",
+    "gtm_growth": "private/bases/BASE_P1_GTM_GROWTH.tex",
+    "trust_safety": "private/bases/BASE_P1_TRUST_SAFETY.tex"
+  },
+  "routing": {
+    "fast_path_similarity": 0.55,
+    "note": "TF-IDF cosine is a relative routing signal, not an external ATS score."
+  },
+  "scouting": {
+    "max_workers": 12
+  },
+  "work_auth": {
+    "hard_reject_patterns": [
+      "us citizens? only",
+      "u\\.s\\. citizenship (is )?required",
+      "must be a us citizen",
+      "security clearance",
+      "active clearance",
+      "ts/sci",
+      "itar",
+      "us persons? only",
+      "not able to sponsor",
+      "unable to sponsor",
+      "no sponsorship",
+      "cannot provide sponsorship",
+      "will not sponsor",
+      "sponsorship (is )?not available",
+      "without the need for.{0,30}sponsorship",
+      "green card holders? only",
+      "permanent resident(s)? only"
+    ],
+    "flag_patterns": [
+      "sponsorship",
+      "work authorization",
+      "citizenship",
+      "citizen",
+      "visa"
+    ]
+  },
+  "qa": {
+    "max_pages": 1,
+    "min_fill_percent": 85,
+    "max_fill_percent": 97,
+    "forbidden_patterns": [
+      "\\\\href",
+      "\\\\url\\{http"
+    ],
+    "banned_claims": [
+
+    ],
+    "min_keyword_coverage": 0.55,
+    "min_ats_alignment_score": 90,
+    "max_qa_retries": 5,
+    "ats_guardrail_note": "Transparent internal score; not a commercial ATS score."
+  },
+  "identity": {
+    "name": "Candidate Name",
+    "email": "candidate@example.com"
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "_profile_version": 1,
+  "_source": "Synthetic public template. Copy to profile.local.json and keep private.",
+  "first_name": "",
+  "last_name": "",
+  "full_name": "",
+  "email": "",
+  "phone": "",
+  "phone_country": "",
+  "phone_country_code": "",
+  "citizenship_country": "",
+  "address": {
+    "street": "",
+    "line1": "",
+    "apartment": "",
+    "city": "",
+    "state": "",
+    "zip": "",
+    "country": ""
+  },
+  "linkedin": "",
+  "portfolio": "",
+  "github": "",
+  "current_company": "",
+  "visa_status": "",
+  "opt_work_period_months": null,
+  "sponsorship_timing": "",
+  "earliest_start": "",
+  "choices": {
+    "work_auth": [],
+    "located_us": [],
+    "authorized_without_sponsorship": [],
+    "sponsorship": [],
+    "immediate_sponsorship": [],
+    "visa_status": [],
+    "relocate": [],
+    "us_citizen": [],
+    "permanent_resident": [],
+    "security_clearance": [],
+    "company_referral": [],
+    "sms_updates": [],
+    "how_heard": []
+  },
+  "eeo": {
+    "gender": [],
+    "race": [],
+    "hispanic": [],
+    "lgbtq_identity": [],
+    "veteran": [],
+    "disability": []
+  },
+  "education": [],
+  "never_auto_answer": [
+    "government or security forms",
+    "legal acknowledgements",
+    "claims not present in canonical evidence",
+    "forced supervisor or reference names"
+  ]
+}

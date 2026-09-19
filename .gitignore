@@ -1,0 +1,43 @@
+# Candidate-specific configuration and evidence
+config.json
+private/
+extension/profile.local.json
+
+# Application state and artifacts
+ledger.sqlite
+ledger.sqlite-*
+ledger_export.json
+applications/
+scouting/
+staged_uploads/
+reflections/
+output/
+*.pdf
+*.docx
+*.tex
+!examples/*.tex
+package.json
+CHECKLIST.md
+RESULT_*
+TICKET_*
+qa_report.json
+
+# Browser and local secrets
+**/chrome-profile/
+**/chromium-profile/
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Python/editor/system files
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+.DS_Store
+.vscode/
+.idea/

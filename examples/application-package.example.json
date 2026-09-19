@@ -1,0 +1,24 @@
+{
+  "job_id": "example_company_product_manager_123",
+  "company": "Example Company",
+  "role": "Product Manager",
+  "job_location": "Example City, ST",
+  "apply_url": "https://example.com/jobs/123",
+  "ats": "generic",
+  "approved": false,
+  "resume_filename": "Candidate_Name_ExampleCompany_ProductManager.pdf",
+  "resume_data_base64": "BASE64_PDF_BYTES_OMITTED",
+  "answers": {
+    "why_company": "Reviewed job-specific answer.",
+    "why_role": "Reviewed job-specific answer.",
+    "custom": []
+  },
+  "resume_qa": {
+    "passed": true,
+    "ats_alignment_score": 94,
+    "keyword_coverage": 0.91,
+    "opal_role_fit_estimate": 88,
+    "pages": 1,
+    "fill_percent": 91.2
+  }
+}

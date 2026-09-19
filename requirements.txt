@@ -1,0 +1,2 @@
+# CareerForger runtime uses the Python standard library.
+# External command-line tools used for full resume QA: latexmk/pdfLaTeX or Tectonic, and pdfinfo.
