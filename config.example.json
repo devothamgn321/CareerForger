@@ -27,8 +27,9 @@
   "work_auth": {
     "hard_reject_patterns": [
       "us citizens? only",
-      "u\\.s\\. citizenship (is )?required",
-      "must be a us citizen",
+      "u\\.s\\. citizens? only",
+      "u\\.?s\\.? citizenship (is )?required",
+      "must be an? (u\\.?s\\.? )?citizen",
       "security clearance",
       "active clearance",
       "ts/sci",
@@ -37,10 +38,13 @@
       "not able to sponsor",
       "unable to sponsor",
       "no sponsorship",
-      "cannot provide sponsorship",
-      "will not sponsor",
-      "sponsorship (is )?not available",
-      "without the need for.{0,30}sponsorship",
+      "cannot (provide|offer|support) (visa |immigration |employment )?sponsorship",
+      "will not (provide |offer )?(visa |immigration )?sponsor",
+      "does not (provide |offer )?(visa |immigration )?sponsor",
+      "(visa |immigration )?sponsorship (is )?not (available|provided|offered)",
+      "without (the need for |requiring |needing )?(current or future |visa |employment |immigration )*sponsorship",
+      "(must|will|do|does) not (now or in the future )?require (current or future |visa |employment |immigration )*sponsorship",
+      "unrestricted (work |employment )?authori[sz]ation",
       "green card holders? only",
       "permanent resident(s)? only"
     ],
@@ -60,9 +64,7 @@
       "\\\\href",
       "\\\\url\\{http"
     ],
-    "banned_claims": [
-
-    ],
+    "banned_claims": [],
     "min_keyword_coverage": 0.55,
     "min_ats_alignment_score": 90,
     "max_qa_retries": 5,

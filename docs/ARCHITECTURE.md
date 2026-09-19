@@ -4,7 +4,7 @@
 **Updated:** 2026-09-19
 **Public project name:** CareerForger
 **Internal engine and CLI name:** AJOS
-**Current autofill release:** P1 Autofill v0.6.12
+**Current autofill release:** P1 Autofill v0.6.13
 **Submission model:** Human review and human Submit
 
 ## 1. Executive summary
@@ -120,7 +120,7 @@ flowchart LR
     MANUAL[Manual sources<br/>LinkedIn · company pages · pasted JD]
     CF[CareerForger<br/>local workspace]
     MODEL[Interchangeable model<br/>file-ticket executor]
-    EXT[P1 Autofill v0.6.12<br/>local Chrome extension]
+    EXT[P1 Autofill v0.6.13<br/>local Chrome extension]
     PORTAL[Application portal]
     HUMAN[Human reviewer]
     OUTCOME[Outcome signals]
@@ -411,7 +411,7 @@ The authority order is:
 
 ## 13. P1 Autofill architecture
 
-P1 Autofill v0.6.12 is local, deterministic, and structurally separated from submission.
+P1 Autofill v0.6.13 is local, deterministic, and structurally separated from submission.
 
 ### Detection and discovery
 
@@ -539,7 +539,7 @@ page must also be refreshed so the current content script is injected.
 
 ## 18. Verification and test strategy
 
-The current regression suite has 18 tests covering:
+The current regression suite has 29 tests covering:
 
 - Scouting Policy v2 freshness and ordering;
 - P0 loose title admission;
@@ -552,7 +552,12 @@ The current regression suite has 18 tests covering:
 - identity and eligibility mappings;
 - absence of unsafe keyboard option selection;
 - exact No handling so it cannot match Latino;
-- Lever US-location and future-sponsorship radio guards.
+- Lever US-location and future-sponsorship radio guards;
+- work-authorization restriction detection, including negated requirements and older configs;
+- title/company/location parsing for scout files, pasted JDs, and labeled fields;
+- Greenhouse link rewriting limited to provable Greenhouse shells;
+- keyword cleanup of company, location, filler, and punctuation tokens;
+- absence of candidate-specific defaults in public extension source.
 
 Additional verification includes JavaScript syntax checks, JSON parsing, extension-directory
 fingerprint comparison, and live non-submitting portal regressions.
@@ -588,7 +593,7 @@ This makes failures diagnosable without relying on invisible model memory.
 | Staged package and named PDF export | Built |
 | Scouting Policy v2 | Built |
 | Read-only approval dashboard | Built |
-| P1 Autofill v0.6.12 | Built and actively hardened |
+| P1 Autofill v0.6.13 | Built and actively hardened |
 | Greenhouse, Ashby, and Lever guarded mappings | Built |
 | DOM-to-application-context bridge | **Not built** |
 | Compact survivor-only scouting inbox | Pending |
@@ -779,37 +784,6 @@ When documents conflict, use this authority order:
 3. Add research dossier and outreach draft tickets.
 4. Add idempotent Gmail/Notion outcome synchronization.
 5. Reconsider orchestration and embeddings only after measured need.
-
----
-|---|
-| `STATE.md` | Live build history and single active next step |
-| `docs/AJOS_ARCHITECTURE_CANONICAL.md` | Locked decisions and concise built/pending boundary |
-| `docs/CAREERFORGER_ARCHITECTURE_REPORT.md` | Human-readable complete architecture and technical report |
-| `docs/DOM_AUTOFILL_ARCHITECTURE.md` | Detailed current DOM/autofill design |
-| `docs/AUTOFILL_FAILURE_LEARNING.md` | Live failure history and fixes |
-| `docs/AUTOFILL_FAILURE_PATTERNS.md` | Sanitized reusable failure patterns |
-| `docs/DECISION_CONFLICT_REGISTER.md` | Rejected, superseded, built, and pending claims |
-| `PIPELINE_MAP.html` | Visual pipeline map |
-| `MIGRATION_REPORT.json` | Relocation, inventory, active/legacy copy status |
-
-When documents conflict, use this authority order:
-
-1. current code and deterministic tests;
-2. `STATE.md` active cursor;
-3. canonical architecture decisions;
-4. this human-readable report;
-5. detailed subsystem documents;
-6. historical imports and archived chats.
-
-## 26. Current next steps
-
-1. Create the sanitized `careerforger` GitHub repository boundary.
-2. Build the local DOM-to-application-context bridge with versioned schemas and application-ID
-   continuity.
-3. Add the compact scouting inbox with survivor-only full-JD retrieval and checkpoints.
-4. Add research dossier and outreach draft tickets.
-5. Add idempotent Gmail/Notion outcome synchronization.
-6. Reconsider orchestration and embeddings only after measured need.
 
 ---
 

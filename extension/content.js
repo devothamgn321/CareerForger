@@ -841,7 +841,7 @@
       country: p.address && p.address.country,
       phone_country: p.phone_country || (p.address && p.address.country),
       residence_country: p.address && p.address.country,
-      citizenship_country: p.citizenship_country || 'India',
+      citizenship_country: p.citizenship_country || '',
       linkedin: p.linkedin, portfolio: p.portfolio, github: p.github, current_company: p.current_company,
       start_date: p.earliest_start, salary: a.salary || '', how_heard: a.how_heard || 'Company careers page',
       why_company: a.why_company || '', why_role: a.why_role || ''
@@ -881,10 +881,32 @@
     }
     return hit && hit.answer ? hit.answer : null;
   }
+  // US state dropdowns vary: "MD", "Maryland", "(US) Maryland". Derive every variant from the
+  // profile's own state instead of hard-coding one candidate's state.
+  const US_STATES = {AL:'Alabama',AK:'Alaska',AZ:'Arizona',AR:'Arkansas',CA:'California',CO:'Colorado',
+    CT:'Connecticut',DE:'Delaware',DC:'District of Columbia',FL:'Florida',GA:'Georgia',HI:'Hawaii',ID:'Idaho',
+    IL:'Illinois',IN:'Indiana',IA:'Iowa',KS:'Kansas',KY:'Kentucky',LA:'Louisiana',ME:'Maine',MD:'Maryland',
+    MA:'Massachusetts',MI:'Michigan',MN:'Minnesota',MS:'Mississippi',MO:'Missouri',MT:'Montana',NE:'Nebraska',
+    NV:'Nevada',NH:'New Hampshire',NJ:'New Jersey',NM:'New Mexico',NY:'New York',NC:'North Carolina',
+    ND:'North Dakota',OH:'Ohio',OK:'Oklahoma',OR:'Oregon',PA:'Pennsylvania',RI:'Rhode Island',SC:'South Carolina',
+    SD:'South Dakota',TN:'Tennessee',TX:'Texas',UT:'Utah',VT:'Vermont',VA:'Virginia',WA:'Washington',
+    WV:'West Virginia',WI:'Wisconsin',WY:'Wyoming'};
+  function stateVariants(raw) {
+    const value = String(raw || '').trim();
+    if (!value) return [];
+    let code = value.toUpperCase();
+    let name = US_STATES[code];
+    if (!name) {
+      const hit = Object.entries(US_STATES).find(([, n]) => n.toLowerCase() === value.toLowerCase());
+      if (!hit) return [value];
+      [code, name] = hit;
+    }
+    return [value, code, name, `(US) ${name}`].filter((v, i, all) => all.indexOf(v) === i);
+  }
   function choiceValue(p, field) {
     const map = {
       phone_country: [p.phone_country_code, `${p.phone_country} (${p.phone_country_code})`, p.phone_country].filter(Boolean),
-      state: [p.address && p.address.state, 'MD', '(US) Maryland'].filter(Boolean),
+      state: stateVariants(p.address && p.address.state),
       work_auth: p.choices.work_auth,
       located_us: p.choices.located_us || ['Yes'],
       authorized_without_sponsorship: p.choices.authorized_without_sponsorship,
@@ -1378,11 +1400,11 @@
 
   const box = document.createElement('div');
   box.id = 'p1f-sidebar';
-  box.dataset.p1Version = '0.6.12';
+  box.dataset.p1Version = '0.6.13';
   box.classList.add('p1f-collapsed');
   box.innerHTML = `
     <div class="p1f-head">
-      <span class="p1f-title">P1 Autofill v0.6.12</span>
+      <span class="p1f-title">P1 Autofill v0.6.13</span>
       <span id="p1f-ats"></span>
       <span class="p1f-head-actions">
         <button id="p1f-min" type="button" title="Open P1 Autofill" aria-label="Open P1 Autofill">⚡</button>

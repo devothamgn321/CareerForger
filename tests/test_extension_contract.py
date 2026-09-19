@@ -32,8 +32,8 @@ class ExtensionContractTests(unittest.TestCase):
     def test_manifest_and_visible_build_version_match(self):
         manifest = json.loads((EXTENSION / "manifest.json").read_text())
         content = (EXTENSION / "content.js").read_text()
-        self.assertEqual(manifest["version"], "0.6.12")
-        self.assertIn("P1 Autofill v0.6.12", content)
+        self.assertEqual(manifest["version"], "0.6.13")
+        self.assertIn("P1 Autofill v0.6.13", content)
 
     def test_short_no_cannot_fuzzy_match_latino(self):
         content = (EXTENSION / "content.js").read_text()
@@ -50,3 +50,10 @@ class ExtensionContractTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+    def test_no_candidate_specific_defaults_in_public_source(self):
+        content = (ROOT / "extension" / "content.js").read_text()
+        self.assertNotIn("|| 'India'", content)
+        self.assertNotIn("'MD', '(US) Maryland'", content)
+        self.assertIn("function stateVariants", content)
+
