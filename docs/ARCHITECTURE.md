@@ -539,7 +539,7 @@ page must also be refreshed so the current content script is injected.
 
 ## 18. Verification and test strategy
 
-The current regression suite has 29 tests covering:
+The current regression suite has 32 tests covering:
 
 - Scouting Policy v2 freshness and ordering;
 - P0 loose title admission;
@@ -557,7 +557,10 @@ The current regression suite has 29 tests covering:
 - title/company/location parsing for scout files, pasted JDs, and labeled fields;
 - Greenhouse link rewriting limited to provable Greenhouse shells;
 - keyword cleanup of company, location, filler, and punctuation tokens;
-- absence of candidate-specific defaults in public extension source.
+- absence of candidate-specific defaults in public extension source;
+- 21 real-style work-authorization prompts mapped to the correct answer field (future
+  sponsorship, immediate sponsorship, authorized-without-sponsorship, OPT/CPT, proof of
+  eligibility, and legally ambiguous prompts left for human review).
 
 Additional verification includes JavaScript syntax checks, JSON parsing, extension-directory
 fingerprint comparison, and live non-submitting portal regressions.

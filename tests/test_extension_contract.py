@@ -1,4 +1,6 @@
 import json
+import shutil
+import subprocess
 import unittest
 from pathlib import Path
 
@@ -47,13 +49,30 @@ class ExtensionContractTests(unittest.TestCase):
         self.assertIn("else if (sponsorshipCard)", content)
         self.assertIn("setButtonChoice(sponsorshipCard, p.choices.sponsorship)", content)
 
-
-if __name__ == "__main__":
-    unittest.main()
-
     def test_no_candidate_specific_defaults_in_public_source(self):
         content = (ROOT / "extension" / "content.js").read_text()
         self.assertNotIn("|| 'India'", content)
         self.assertNotIn("'MD', '(US) Maryland'", content)
         self.assertIn("function stateVariants", content)
 
+    @unittest.skipUnless(shutil.which("node"), "node is required to execute extension source")
+    def test_work_authorization_questions_map_to_the_right_answer_field(self):
+        source = (EXTENSION / "content.js").read_text()
+        start = source.index("  const ELIGIBILITY_FIELDS")
+        end = source.index("  function classify(el, adapterSelectors)")
+        cases = json.loads((ROOT / "tests" / "fixtures" / "eligibility_questions.json").read_text())["cases"]
+        script = source[start:end] + "\nconst cases = " + json.dumps(cases) + ";\n" + \
+            "console.log(JSON.stringify(cases.map(([q]) => eligibilityIntent(q))));"
+        out = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=True).stdout
+        for (question, expected), got in zip(cases, json.loads(out)):
+            with self.subTest(question=question):
+                self.assertEqual(got, expected)
+
+    def test_public_profile_has_opt_cpt_field_left_blank(self):
+        profile = json.loads((EXTENSION / "profile.default.json").read_text())
+        self.assertIn("opt_cpt_status", profile["choices"])
+        self.assertEqual(profile["choices"]["opt_cpt_status"], [])
+
+
+if __name__ == "__main__":
+    unittest.main()

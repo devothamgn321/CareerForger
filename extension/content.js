@@ -242,6 +242,45 @@
     return '';
   }
 
+  // ---------------------------------------------------------------- eligibility intent
+  // One classifier for every work-authorization / sponsorship question, used by field
+  // classification, the eligibility guard, and the button fallback. Order matters: the most
+  // specific meaning wins. "Now or in the future" is a FUTURE question; "without sponsorship"
+  // is its own question whose honest answer differs from plain "authorized to work".
+  const ELIGIBILITY_FIELDS = new Set([
+    'manual_legal', 'authorized_without_sponsorship', 'sponsorship', 'immediate_sponsorship',
+    'opt_cpt_status', 'employment_eligibility_ack', 'work_auth'
+  ]);
+  function eligibilityIntent(raw) {
+    const t = String(raw || '').replace(/\s+/g, ' ').toLowerCase();
+    if (!t) return null;
+    // Legally ambiguous for F-1/OPT candidates: always left to the human.
+    if (/without\s+(any\s+)?restriction|for\s+any\s+employer|any\s+u\.?s\.?\s+employer|stem\s+opt\s+extension|\bi-?983\b|e-?verify/.test(t)) {
+      return 'manual_legal';
+    }
+    const mentionsSponsor = /sponsor/.test(t);
+    if (/without\s+(the\s+)?(need\s+(for|of)\s+|requiring\s+|needing\s+)?(any\s+)?(current\s+or\s+future\s+)?(visa\s+|company\s+|employer\s+|employment\s+|immigration\s+)*sponsor/.test(t) ||
+        /(authori[sz]ed|eligible|able)\s+to\s+work\b.{0,80}\bwithout\b.{0,40}sponsor/.test(t)) {
+      return 'authorized_without_sponsorship';
+    }
+    if (mentionsSponsor) {
+      const future = /\bfuture\b|\bever\b|\bat\s+any\s+(point|time)\b|\bnow\s+or\b|\bor\s+will\s+you\b|\bwill\s+you\s+(now\s+or\s+)?(in\s+the\s+future\s+)?(need|require)\s+(h-?1b|sponsorship\s+for\s+(an?\s+)?h-?1b)|h-?1b/.test(t);
+      const immediate = /\b(now|currently|immediately|immediate|today|at\s+this\s+time)\b|to\s+(begin|start|commence)|at\s+(the\s+)?(time\s+of\s+)?(hire|start|onboarding)|upon\s+hire/.test(t);
+      if (immediate && !future) return 'immediate_sponsorship';
+      return 'sponsorship';
+    }
+    if (/\b(opt|cpt)\b|optional\s+practical\s+training|curricular\s+practical\s+training/.test(t)) {
+      return 'opt_cpt_status';
+    }
+    if (/(proof|document(s|ation)?|evidence)\b.{0,60}\b(right|eligib\w*|authori[sz]\w*)\s+to\s+work|employment\s+eligibility/.test(t)) {
+      return 'employment_eligibility_ack';
+    }
+    if (/authori[sz]ed\s+to\s+work|work\s+authori[sz]ation|legally\s+(able|authori[sz]ed|eligible)\s+to\s+work|eligible\s+to\s+work\s+in/.test(t)) {
+      return 'work_auth';
+    }
+    return null;
+  }
+
   function classify(el, adapterSelectors) {
     const cand = {};
     const add = (f, s) => { if (f && (!(f in cand) || s > cand[f])) cand[f] = s; };
@@ -251,6 +290,8 @@
     if (/(legal\s+)?first\s+(and|&)\s+last\s+name|first\s+and\s+last\s+name/i.test(visibleLabel)) {
       return { field: 'full_name', score: 120 };
     }
+    const eligibility = eligibilityIntent(visibleLabel);
+    if (eligibility) return { field: eligibility, score: 125 };
     const exactQuestionOverrides = [
       ['apartment', /address\s*line\s*2|\bapartment\b|\bapt\.?\b\s*(number|no\.?|#)?|\bunit\b\s*(number|no\.?|#)?/i],
       ['located_us', /(?:are\s+you\s+)?(?:currently\s+)?located\s+in\s+(?:the\s+)?(?:u\.?s\.?|united\s+states)/i],
@@ -913,6 +954,8 @@
       sponsorship: p.choices.sponsorship, relocate: p.choices.relocate,
       onsite: ['Yes'], salary_ack: ['Yes'],
       immediate_sponsorship: p.choices.immediate_sponsorship, visa_status: p.choices.visa_status,
+      opt_cpt_status: (p.choices.opt_cpt_status && p.choices.opt_cpt_status.length) ? p.choices.opt_cpt_status : null,
+      manual_legal: null,
       us_citizen: p.choices.us_citizen, permanent_resident: p.choices.permanent_resident,
       security_clearance: p.choices.security_clearance, company_referral: p.choices.company_referral,
       prior_company_employment: ['No'],
@@ -1150,9 +1193,10 @@
     // and on-site all fill. Old sponsorship regex required a specific "now or future require"
     // ordering and missed Mercor's "require work sponsorship now and/or in the future".
     const specs = [
-      { field: 'authorized_without_sponsorship', question: /authorized\s+to\s+work\s+without\s+(company\s+)?sponsorship|work\s+without\s+(now\s+or\s+future\s+)?sponsorship/i, wanted: p.choices.authorized_without_sponsorship },
-      { field: 'work_auth', question: /legally authorized to work|authorized to work in/i, exclude: /without\s+(company\s+)?sponsorship/i, wanted: p.choices.work_auth },
-      { field: 'sponsorship', question: /sponsor/i, wanted: p.choices.sponsorship },
+      { field: 'authorized_without_sponsorship', intent: true, wanted: p.choices.authorized_without_sponsorship },
+      { field: 'work_auth', intent: true, wanted: p.choices.work_auth },
+      { field: 'sponsorship', intent: true, wanted: p.choices.sponsorship },
+      { field: 'immediate_sponsorship', intent: true, wanted: p.choices.immediate_sponsorship },
       { field: 'relocate', question: /willing to relocate|open to relocat|located in .*(relocat|or nyc)/i, wanted: p.choices.relocate },
       { field: 'onsite', question: /work on-?site|on-?site in our|in-?office|in person|days a week|work from.*office/i, wanted: (p.choices.onsite || ['Yes']) }
     ];
@@ -1162,8 +1206,15 @@
         item.ok && String(item.f || '').replace(/_(guard|ashby)$/, '') === spec.field
       );
       if (alreadyVerified) continue;
+      if (!spec.wanted || !spec.wanted.length) continue;
       const container = questions.find((node) => {
         const text = String(node.innerText || '');
+        if (spec.intent) {
+          // Judge the question by its own prompt, not a wrapper that holds many questions.
+          const prompt = node.querySelector && node.querySelector('label, legend, [class*="label" i]');
+          const promptText = String((prompt && prompt.textContent) || text).slice(0, 400);
+          return eligibilityIntent(promptText) === spec.field;
+        }
         return spec.question.test(text) && !(spec.exclude && spec.exclude.test(text));
       });
       if (!container) continue;
@@ -1240,6 +1291,10 @@
             step(f, ok ? 'done' : 'failed', ok ? `${fname} attached` : `${fname} upload failed`);
           }
           else plan.push({ f, label: f, ok: false, type: 'file', skip: true });
+        } else if (f === 'manual_legal' || (f === 'opt_cpt_status' && !choiceValue(p, f))) {
+          plan.push({ f, label: labelTextFor(el) || f, ok: false, manual: true,
+                      note: 'Work-authorization wording left for human review' });
+          continue;
         } else if (tag === 'SELECT') {
           const w = choiceValue(p, f) || [simpleValue(p, f, pkg)].filter(Boolean);
           if (!w || !w.length) continue;
@@ -1278,7 +1333,8 @@
     step('identity', coreOk ? 'done' : 'manual', `${coreOk} core field mapping(s) verified`);
     // Yes/No button questions not caught above (onsite, sponsorship rendered as standalone buttons w/ label text)
     for (const f of [
-      'sponsorship', 'immediate_sponsorship', 'onsite', 'work_auth', 'relocate',
+      'sponsorship', 'immediate_sponsorship', 'authorized_without_sponsorship', 'opt_cpt_status',
+      'onsite', 'work_auth', 'relocate',
       'located_us',
       'eligible_state', 'truth_declaration', 'employment_eligibility_ack',
       'us_citizen', 'permanent_resident', 'security_clearance', 'company_referral', 'prior_company_employment',
@@ -1286,8 +1342,16 @@
       'how_heard', 'gender', 'race', 'hispanic', 'sexual_orientation', 'lgbtq_identity', 'veteran', 'disability'
     ]) {
       if (plan.some((s) => s.f === f && s.ok)) continue;
+      const cvFallback = choiceValue(p, f);
+      if (!cvFallback || !cvFallback.length) continue;
       const q = Array.from(document.querySelectorAll('label, legend, p, div'))
-        .find((n) => n.childElementCount <= 3 && FIELD_PATTERNS[f].some((re) => re.test(n.textContent || '')));
+        .find((n) => {
+          if (n.childElementCount > 3) return false;
+          const text = n.textContent || '';
+          if (ELIGIBILITY_FIELDS.has(f)) return eligibilityIntent(text) === f;
+          if (eligibilityIntent(text) === 'manual_legal') return false;
+          return FIELD_PATTERNS[f].some((re) => re.test(text));
+        });
       if (q) {
         const container = q.closest('div[class*="field" i], div[class*="question" i], fieldset, li') || q.parentElement;
         const r = setButtonChoice(container, choiceValue(p, f));

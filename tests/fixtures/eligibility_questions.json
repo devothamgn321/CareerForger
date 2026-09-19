@@ -1,0 +1,26 @@
+{
+  "_note": "Real-style work-authorization prompts and the field each must map to. manual_legal means the extension must leave it for the human.",
+  "cases": [
+    ["Are you legally authorized to work in the United States?", "work_auth"],
+    ["Are you authorized to work in the country for which you are applying?", "work_auth"],
+    ["Will you now or in the future require sponsorship for employment visa status (e.g., H-1B visa status)?", "sponsorship"],
+    ["Do you now, or will you in the future, require immigration sponsorship to work in the US?", "sponsorship"],
+    ["Will you, now or in the future, require sponsorship for employment visa status?", "sponsorship"],
+    ["Will you need H-1B sponsorship in the future?", "sponsorship"],
+    ["Do you require employer sponsorship (e.g. H-1B) to work in the U.S.?", "sponsorship"],
+    ["Are you authorized to work in the U.S. without company sponsorship?", "authorized_without_sponsorship"],
+    ["Are you legally eligible to work in the US without requiring visa sponsorship now or in the future?", "authorized_without_sponsorship"],
+    ["Are you able to work in the United States without the need of sponsorship?", "authorized_without_sponsorship"],
+    ["Will you require visa sponsorship to begin employment with us?", "immediate_sponsorship"],
+    ["Do you require sponsorship now?", "immediate_sponsorship"],
+    ["Do you currently require sponsorship to work in the United States?", "immediate_sponsorship"],
+    ["Will you require sponsorship at the time of hire?", "immediate_sponsorship"],
+    ["Are you currently on F-1 OPT or CPT?", "opt_cpt_status"],
+    ["Can you provide proof of your legal right to work in the United States?", "employment_eligibility_ack"],
+    ["Are you eligible to work in the US for any employer without restriction?", "manual_legal"],
+    ["Will you require the company to support a STEM OPT extension (E-Verify / I-983)?", "manual_legal"],
+    ["What is your current visa status?", null],
+    ["Are you a U.S. citizen?", null],
+    ["What is your country of citizenship?", null]
+  ]
+}
