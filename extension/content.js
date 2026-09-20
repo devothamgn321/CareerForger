@@ -189,6 +189,7 @@
     ],
     sponsorship: [/sponsor|visa\s*(sponsorship|support)/i],
     visa_status: [/visa\s+status|immigration\s+status|current\s+status/i],
+    age_18: [/\b(18|eighteen)\s*(years|yrs)?\s*(of\s+age|old)?\s*(or\s+older|\+)|at\s+least\s+(18|eighteen)/i],
     onsite: [
       /in-?office|on-?site|5\s*days\s*a\s*week/i,
       /work\s+from.*office|office.*days?\s+per\s+week/i
@@ -306,6 +307,7 @@
     const exactQuestionOverrides = [
       ['apartment', /address\s*line\s*2|\bapartment\b|\bapt\.?\b\s*(number|no\.?|#)?|\bunit\b\s*(number|no\.?|#)?/i],
       ['located_us', /(?:are\s+you\s+)?(?:currently\s+)?located\s+in\s+(?:the\s+)?(?:u\.?s\.?|united\s+states)/i],
+      ['age_18', /\b(18|eighteen)\s*(years|yrs)?\s*(of\s+age|old)?\s*(or\s+older|\+)|at\s+least\s+(18|eighteen)|over\s+the\s+age\s+of\s+(18|eighteen)/i],
       ['current_job_location', /confirm\s+you\s+are\s+located\s+where\s+the\s+role\s+is\s+advertised|currently\s+located.*role.*advertised/i],
       // A work-authorization question whose text contains "country" (e.g. "authorized to
       // work in country listed") must not fall to the generic country matcher (AF-013).
@@ -432,19 +434,32 @@
     return sibling || null;
   }
   function visibleComboboxOptions(el) {
+    // Only this control's own menu. Reading "whatever list is open" let a stale phone-country
+    // menu answer later questions ("No" matched "Norfolk Island +672").
     const controlled = el && el.getAttribute && el.getAttribute('aria-controls');
-    const controlledRoot = controlled && document.getElementById(controlled);
-    const roots = controlledRoot
-      ? [controlledRoot]
-      : Array.from(document.querySelectorAll(
-          '[role=listbox], .select__menu, [id^="react-select-"][id$="-listbox"]'
-        ))
-          .filter((listbox) => listbox.getClientRects().length > 0);
-    const scope = roots.length === 1 ? roots[0] : document;
+    const byId = el && el.id && document.getElementById(`react-select-${el.id}-listbox`);
+    const shell = el && comboboxShell(el);
+    const scope = (controlled && document.getElementById(controlled)) || byId ||
+      (shell && shell.querySelector('[role=listbox], .select__menu'));
+    if (!scope) return [];
     return Array.from(scope.querySelectorAll(
       '[role=option], [role=listbox] li, .select__option, [data-option-index], ' +
       '[id^="react-select-"][id*="-option-"], .select__menu-list > div'
-    )).filter((option) => option.getClientRects().length > 0);
+    )).filter((option) => option.getClientRects().length > 0 &&
+      !/^(loading\.*|no options|no results( found)?|searching\.*)$/i
+        .test(String(option.textContent || '').trim()));
+  }
+  function closeForeignMenus(el) {
+    // Phone-flag (intl-tel-input) dropdown and any other open react-select menu.
+    for (const btn of document.querySelectorAll('.iti__selected-country[aria-expanded=true]')) {
+      btn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      btn.click();
+    }
+    for (const other of document.querySelectorAll('input[role=combobox][aria-expanded=true]')) {
+      if (other === el) continue;
+      other.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, bubbles: true }));
+      other.blur();
+    }
   }
   async function waitForComboboxOptions(el, timeoutMs) {
     const deadline = Date.now() + timeoutMs;
@@ -498,11 +513,14 @@
     })).filter((row) => row.text);
     const comparable = (value) => String(value).toLowerCase()
       .replace(/^\([^)]{1,12}\)\s*/, '').trim();
+    const esc = (v) => v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const startsWord = (text, w) => w && new RegExp('^' + esc(w) + '(?![a-z0-9])', 'i').test(text);
+    const endsWord = (text, w) => w && new RegExp('(?<![a-z0-9])' + esc(w) + '$', 'i').test(text);
     return rows.find((row) => comparable(row.text) === lw) ||
-      rows.find((row) => comparable(row.text).startsWith(lw)) ||
-      rows.find((row) => lw.length >= 3 && comparable(row.text).endsWith(lw)) ||
+      rows.find((row) => startsWord(comparable(row.text), lw)) ||
+      rows.find((row) => lw.length >= 3 && endsWord(comparable(row.text), lw)) ||
       (city.length >= 3
-        ? rows.find((row) => comparable(row.text).startsWith(city))
+        ? rows.find((row) => startsWord(comparable(row.text), city))
         : null);
   }
   function commitComboboxOption(option) {
@@ -630,6 +648,7 @@
           );
           if (!trustedClose.ok) activateControl(otherToggle || other);
         }
+        closeForeignMenus(el);
         await sleep(100);
         const toggle = comboboxToggle(el, shell);
         let trustedOpen = { ok: true, method: 'already-open' };
@@ -986,7 +1005,7 @@
       located_us: p.choices.located_us || ['Yes'],
       authorized_without_sponsorship: p.choices.authorized_without_sponsorship,
       sponsorship: p.choices.sponsorship, relocate: p.choices.relocate,
-      onsite: ['Yes'], salary_ack: ['Yes'],
+      onsite: ['Yes'], salary_ack: ['Yes'], age_18: ['Yes'],
       immediate_sponsorship: p.choices.immediate_sponsorship, visa_status: p.choices.visa_status,
       opt_cpt_status: (p.choices.opt_cpt_status && p.choices.opt_cpt_status.length) ? p.choices.opt_cpt_status : null,
       stem_opt: (p.choices.stem_opt && p.choices.stem_opt.length) ? p.choices.stem_opt : null,
@@ -1376,7 +1395,7 @@
     for (const f of [
       'sponsorship', 'immediate_sponsorship', 'authorized_without_sponsorship', 'opt_cpt_status', 'stem_opt',
       'onsite', 'work_auth', 'relocate',
-      'located_us',
+      'located_us', 'age_18',
       'eligible_state', 'truth_declaration', 'employment_eligibility_ack',
       'us_citizen', 'permanent_resident', 'security_clearance', 'company_referral', 'prior_company_employment',
       'sms_updates',
@@ -1510,11 +1529,11 @@
 
   const box = document.createElement('div');
   box.id = 'p1f-sidebar';
-  box.dataset.p1Version = '0.6.17';
+  box.dataset.p1Version = '0.6.18';
   box.classList.add('p1f-collapsed');
   box.innerHTML = `
     <div class="p1f-head">
-      <span class="p1f-title">P1 Autofill v0.6.17</span>
+      <span class="p1f-title">P1 Autofill v0.6.18</span>
       <span id="p1f-ats"></span>
       <span class="p1f-head-actions">
         <button id="p1f-stop-head" type="button" title="Stop autofill (Esc)" aria-label="Stop autofill" hidden>■</button>
@@ -1637,7 +1656,9 @@
   }
   box.querySelector('#p1f-load').onclick = () => {
     try {
-      usePackage(JSON.parse(box.querySelector('#p1f-pkg').value), 'paste');
+      const raw = box.querySelector('#p1f-pkg').value.trim();
+      if (!raw) { log(pkg ? 'package already loaded' : 'nothing pasted'); return; }
+      usePackage(JSON.parse(raw), 'paste');
     } catch (e) {
       log('package JSON parse error: ' + e.message);
       step('package', 'failed', e.message);

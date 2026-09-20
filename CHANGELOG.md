@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-09-20 — P1 Autofill v0.6.18: dropdown fixes from a live Greenhouse run
+
+### Fixed
+- **A stale dropdown answered other questions.** Option lookup read whatever menu was open, so an
+  open phone-country list fed later questions, and "No" matched "Norfolk Island +672". Options
+  are now read only from the control's own menu (aria-controls, its react-select listbox, or its
+  own container). Other open menus and the intl-tel-input flag list are closed first.
+- **Prefix matches are word-bounded:** "No" no longer matches "Norfolk"; "United States" still
+  matches "United States +1".
+- "Loading...", "No options" and similar placeholder rows are no longer treated as options.
+- New `age_18` field: "Are you 18 years of age or older?" answers Yes.
+- Clicking Load package with an empty box is a no-op instead of a JSON error.
+
 ## 2026-09-19 — Package bridge (P1 Autofill v0.6.17)
 
 ### Added
