@@ -1,0 +1,143 @@
+{
+  "_profile_version": 1,
+  "_source": "FICTIONAL example showing the format. Every value here is made up. Copy profile.default.json to profile.local.json and put YOUR data there.",
+  "first_name": "Alex",
+  "last_name": "Example",
+  "full_name": "Alex Example",
+  "email": "alex.example@example.com",
+  "phone": "555-010-0000",
+  "phone_country": "United States",
+  "phone_country_code": "+1",
+  "citizenship_country": "Canada",
+  "address": {
+    "street": "123 Sample St",
+    "line1": "123 Sample St",
+    "apartment": "Apt 4",
+    "city": "Springfield",
+    "state": "Illinois",
+    "zip": "62701",
+    "country": "United States"
+  },
+  "linkedin": "https://www.linkedin.com/in/alex-example",
+  "portfolio": "https://alex-example.dev",
+  "github": "https://github.com/alex-example",
+  "current_company": "Example Corp",
+  "visa_status": "F-1 OPT",
+  "opt_work_period_months": 36,
+  "sponsorship_timing": "No sponsorship needed to start (OPT); H-1B sponsorship needed later.",
+  "sponsorship_explanation": "Yes, in the future. I am on F-1 OPT and eligible for the STEM OPT extension. I will need H-1B sponsorship after that period.",
+  "immediate_sponsorship_explanation": "No. I can start on F-1 OPT without sponsorship. I will need H-1B sponsorship in the future.",
+  "earliest_start": "January 2027",
+  "gpa": "3.70",
+  "choices": {
+    "work_auth": [
+      "Yes"
+    ],
+    "located_us": [
+      "Yes"
+    ],
+    "authorized_without_sponsorship": [
+      "No"
+    ],
+    "sponsorship": [
+      "Yes"
+    ],
+    "immediate_sponsorship": [
+      "No"
+    ],
+    "opt_cpt_status": [
+      "Yes"
+    ],
+    "stem_opt": [
+      "Yes"
+    ],
+    "visa_status": [
+      "F-1 OPT",
+      "F-1 Student",
+      "F-1"
+    ],
+    "relocate": [
+      "Yes"
+    ],
+    "onsite": [
+      "Yes"
+    ],
+    "us_citizen": [
+      "No"
+    ],
+    "permanent_resident": [
+      "No"
+    ],
+    "security_clearance": [
+      "No",
+      "None"
+    ],
+    "company_referral": [
+      "No"
+    ],
+    "sms_updates": [
+      "No"
+    ],
+    "how_heard": [
+      "Company careers page",
+      "Company website",
+      "LinkedIn",
+      "Other"
+    ]
+  },
+  "eeo": {
+    "gender": [
+      "Decline to self-identify",
+      "I don't wish to answer"
+    ],
+    "race": [
+      "Decline to self-identify",
+      "I don't wish to answer"
+    ],
+    "hispanic": [
+      "Decline to self-identify"
+    ],
+    "sexual_orientation": [
+      "I don't wish to answer"
+    ],
+    "lgbtq_identity": [
+      "I don't wish to answer"
+    ],
+    "veteran": [
+      "I don't wish to answer",
+      "I am not a protected veteran"
+    ],
+    "disability": [
+      "I don't wish to answer",
+      "No, I do not have a disability"
+    ]
+  },
+  "education": [
+    {
+      "school": [
+        "Example State University",
+        "Other"
+      ],
+      "degree": [
+        "Master of Science (M.S.)",
+        "Master's Degree"
+      ],
+      "major": [
+        "Computer Science",
+        "Engineering, General"
+      ],
+      "start_month": "August",
+      "start_year": "2025",
+      "end_month": "December",
+      "end_year": "2026",
+      "still_student": false,
+      "gpa": "3.70"
+    }
+  ],
+  "never_auto_answer": [
+    "government or security forms",
+    "legal acknowledgements",
+    "claims not present in canonical evidence",
+    "forced supervisor or reference names"
+  ]
+}

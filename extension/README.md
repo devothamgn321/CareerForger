@@ -26,7 +26,10 @@ the minimize control to return it to the icon. Form detection never forces it op
 
 ## Load it (one time)
 1. `chrome://extensions` → **Developer mode** ON → **Load unpacked** → select this folder.
-2. On install it seeds your profile (`profile.default.json`) into `chrome.storage.local`.
+2. Before loading, copy `profile.default.json` to `profile.local.json` (git-ignored) and fill it in.
+   See `PROFILE_GUIDE.md` for every field and option, and `profile.example.json` for a fictional
+   filled-in example. On install the extension seeds `profile.local.json` (or the blank default)
+   into `chrome.storage.local`.
 3. Open any supported ATS application page — the **P1 Autofill** sidebar appears top-right.
 
 ## Use it (per application)
@@ -43,7 +46,8 @@ the minimize control to return it to the icon. Form detection never forces it op
 
 ## Files
 manifest.json · background.js (profile seed + messaging) · content.js (engine + sidebar) ·
-sidebar.css · profile.default.json (from PDS) · PACKAGE_FORMAT.md
+sidebar.css · profile.default.json (blank template) · profile.example.json (fictional) ·
+PROFILE_GUIDE.md · PACKAGE_FORMAT.md
 
 
 ## Universal means guarded coverage, not blind completion

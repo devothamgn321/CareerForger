@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-09-19 — Profile template and guide
+
+### Added
+- `extension/PROFILE_GUIDE.md`: every profile field, the question it answers, and accepted options.
+- `extension/profile.example.json`: a fictional filled-in profile showing the format.
+- The blank `profile.default.json` now lists every field the engine reads (`gpa`,
+  `sponsorship_explanation`, `immediate_sponsorship_explanation`, `choices.onsite`,
+  `eeo.sexual_orientation`).
+- Test: the shipped template stays blank and the example matches its fields.
+
+### Fixed
+- The sidebar's profile recovery path now reads `profile.local.json` before the blank default,
+  matching the background seeding.
+
 ## 2026-09-19 — P1 Autofill v0.6.16: free-text sponsorship and GPA
 
 ### Fixed

@@ -94,7 +94,8 @@ is required by the current architecture.
    ```
 
    Add your private values to `profile.local.json`, load `extension/` as an unpacked Chrome
-   extension, and never commit the local profile.
+   extension, and never commit the local profile. `extension/PROFILE_GUIDE.md` lists every field
+   and its accepted options; `extension/profile.example.json` is a filled-in fictional example.
 
 ## Current status
 

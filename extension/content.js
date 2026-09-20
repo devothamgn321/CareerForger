@@ -27,8 +27,14 @@
         return;
       }
       try {
-        const response = await fetch(chrome.runtime.getURL('profile.default.json'));
-        const profile = await response.json();
+        let profile = null;
+        for (const name of ['profile.local.json', 'profile.default.json']) {
+          try {
+            const response = await fetch(chrome.runtime.getURL(name));
+            if (response.ok) { profile = await response.json(); break; }
+          } catch (e) {}
+        }
+        if (!profile) throw new Error('no profile.local.json or profile.default.json');
         await chrome.storage.local.set({ user_profile: profile });
         resolve(profile);
       } catch (error) {

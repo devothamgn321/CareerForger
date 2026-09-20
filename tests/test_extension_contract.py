@@ -84,6 +84,28 @@ class ExtensionContractTests(unittest.TestCase):
         # Waits must be interruptible, and the per-field catch must not swallow a stop.
         self.assertIn("if (RUN.stopped) { reject(new StopRequested()); return; }", content)
 
+    def test_public_profiles_hold_no_real_data(self):
+        blank = json.loads((EXTENSION / "profile.default.json").read_text())
+        example = json.loads((EXTENSION / "profile.example.json").read_text())
+        # The example documents every field the template has, and nothing else.
+        self.assertEqual(set(blank) - {"_source"}, set(example) - {"_source"})
+        self.assertEqual(set(blank["choices"]), set(example["choices"]))
+        self.assertEqual(set(blank["eeo"]), set(example["eeo"]))
+        # The shipped template is blank: nothing gets typed into a real form by accident.
+        def values(node):
+            if isinstance(node, dict):
+                for key, value in node.items():
+                    if not key.startswith("_") and key != "never_auto_answer":
+                        yield from values(value)
+            elif isinstance(node, list):
+                for item in node:
+                    yield from values(item)
+            else:
+                yield node
+        self.assertTrue(all(v in ("", None) for v in values(blank)))
+        self.assertIn("example.com", example["email"])
+        self.assertIn("profile.local.json", (ROOT / ".gitignore").read_text())
+
 
 if __name__ == "__main__":
     unittest.main()
