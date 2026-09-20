@@ -4,7 +4,7 @@
 **Updated:** 2026-09-19
 **Public project name:** CareerForger
 **Internal engine and CLI name:** AJOS
-**Current autofill release:** P1 Autofill v0.6.13
+**Current autofill release:** P1 Autofill v0.6.14
 **Submission model:** Human review and human Submit
 
 ## 1. Executive summary
@@ -120,7 +120,7 @@ flowchart LR
     MANUAL[Manual sources<br/>LinkedIn · company pages · pasted JD]
     CF[CareerForger<br/>local workspace]
     MODEL[Interchangeable model<br/>file-ticket executor]
-    EXT[P1 Autofill v0.6.13<br/>local Chrome extension]
+    EXT[P1 Autofill v0.6.14<br/>local Chrome extension]
     PORTAL[Application portal]
     HUMAN[Human reviewer]
     OUTCOME[Outcome signals]
@@ -411,7 +411,7 @@ The authority order is:
 
 ## 13. P1 Autofill architecture
 
-P1 Autofill v0.6.13 is local, deterministic, and structurally separated from submission.
+P1 Autofill v0.6.14 is local, deterministic, and structurally separated from submission.
 
 ### Detection and discovery
 
@@ -539,7 +539,7 @@ page must also be refreshed so the current content script is injected.
 
 ## 18. Verification and test strategy
 
-The current regression suite has 32 tests covering:
+The current regression suite has 33 tests covering:
 
 - Scouting Policy v2 freshness and ordering;
 - P0 loose title admission;
@@ -558,6 +558,7 @@ The current regression suite has 32 tests covering:
 - Greenhouse link rewriting limited to provable Greenhouse shells;
 - keyword cleanup of company, location, filler, and punctuation tokens;
 - absence of candidate-specific defaults in public extension source;
+- a manual stop control (button, header icon, Esc) that interrupts waits and fill loops;
 - 21 real-style work-authorization prompts mapped to the correct answer field (future
   sponsorship, immediate sponsorship, authorized-without-sponsorship, OPT/CPT, proof of
   eligibility, and legally ambiguous prompts left for human review).
@@ -596,7 +597,7 @@ This makes failures diagnosable without relying on invisible model memory.
 | Staged package and named PDF export | Built |
 | Scouting Policy v2 | Built |
 | Read-only approval dashboard | Built |
-| P1 Autofill v0.6.13 | Built and actively hardened |
+| P1 Autofill v0.6.14 | Built and actively hardened |
 | Greenhouse, Ashby, and Lever guarded mappings | Built |
 | DOM-to-application-context bridge | **Not built** |
 | Compact survivor-only scouting inbox | Pending |

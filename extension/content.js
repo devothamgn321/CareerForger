@@ -377,7 +377,26 @@
     return { ok: false, options: opts.map((o) => o.textContent.trim()).slice(0, 25) };
   }
 
-  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  // ---------------------------------------------------------------- manual stop
+  // The human can stop a run at any time (Stop button or Esc). Every wait and every loop
+  // checks this flag, so the run ends within one step instead of finishing all iterations.
+  // Fields already filled are left as they are for the human to review.
+  class StopRequested extends Error {
+    constructor() { super('Autofill stopped by user'); this.name = 'StopRequested'; }
+  }
+  const RUN = { active: false, stopped: false };
+  function checkStop() { if (RUN.stopped) throw new StopRequested(); }
+  const sleep = (ms) => new Promise((resolve, reject) => {
+    if (RUN.stopped) { reject(new StopRequested()); return; }
+    const started = Date.now();
+    const tick = () => {
+      if (RUN.stopped) { reject(new StopRequested()); return; }
+      const left = ms - (Date.now() - started);
+      if (left <= 0) { resolve(); return; }
+      setTimeout(tick, Math.min(left, 50));
+    };
+    setTimeout(tick, Math.min(ms, 50));
+  });
   function activateControl(el) {
     // A synthetic pointer+mouse+click sequence can toggle React Select twice:
     // pointerdown opens it and the later click closes it. Native HTMLElement.click()
@@ -1202,6 +1221,7 @@
     ];
     let verified = 0;
     for (const spec of specs) {
+      checkStop();
       const alreadyVerified = plan.some((item) =>
         item.ok && String(item.f || '').replace(/_(guard|ashby)$/, '') === spec.field
       );
@@ -1264,6 +1284,7 @@
     fillOfficeLocationCheckboxes(pkg, plan);
     step('identity', 'running', 'Filling identity, contact, employer, and location');
     for (const el of fields) {
+      checkStop();
       if (el.closest && el.closest('#p1f-sidebar')) continue;
       if (el.type === 'radio' && handledRadioNames.has(el.name || el.id)) continue;
       const c = classify(el, adapter.selectors);
@@ -1326,7 +1347,10 @@
           if (done.has(f)) continue; done.add(f);
           const ok = setText(el, v); plan.push({ f, label: f, ok, el, value: v, type: 'text' });
         }
-      } catch (err) { plan.push({ f, label: f, ok: false, err: err.message }); }
+      } catch (err) {
+        if (err instanceof StopRequested) throw err;
+        plan.push({ f, label: f, ok: false, err: err.message });
+      }
     }
     const coreFields = ['full_name', 'first_name', 'last_name', 'email', 'phone', 'current_company', 'location'];
     const coreOk = plan.filter((s) => coreFields.includes(s.f) && s.ok).length;
@@ -1341,6 +1365,7 @@
       'sms_updates',
       'how_heard', 'gender', 'race', 'hispanic', 'sexual_orientation', 'lgbtq_identity', 'veteran', 'disability'
     ]) {
+      checkStop();
       if (plan.some((s) => s.f === f && s.ok)) continue;
       const cvFallback = choiceValue(p, f);
       if (!cvFallback || !cvFallback.length) continue;
@@ -1358,11 +1383,15 @@
         if (r.ok) plan.push({ f, label: f, ok: true, chosen: r.chosen });
       }
     }
+    checkStop();
     await fillAshbyRequiredFields(p, pkg, plan);
     fillLeverRequiredFields(p, pkg, plan);
     fillLeverHowHeard(pkg, plan);
+    checkStop();
     await fillEducation(p, log, step);
+    checkStop();
     await enforceCanonicalName(p, adapter, plan, log, step);
+    checkStop();
     await enforceEligibilityChoices(p, pkg, plan, step);
     // React Select can render its committed chip/single-value after the click
     // promise resolves. Validate the settled DOM, not the transient menu state.
@@ -1464,13 +1493,14 @@
 
   const box = document.createElement('div');
   box.id = 'p1f-sidebar';
-  box.dataset.p1Version = '0.6.13';
+  box.dataset.p1Version = '0.6.14';
   box.classList.add('p1f-collapsed');
   box.innerHTML = `
     <div class="p1f-head">
-      <span class="p1f-title">P1 Autofill v0.6.13</span>
+      <span class="p1f-title">P1 Autofill v0.6.14</span>
       <span id="p1f-ats"></span>
       <span class="p1f-head-actions">
+        <button id="p1f-stop-head" type="button" title="Stop autofill (Esc)" aria-label="Stop autofill" hidden>■</button>
         <button id="p1f-min" type="button" title="Open P1 Autofill" aria-label="Open P1 Autofill">⚡</button>
       </span>
     </div>
@@ -1480,6 +1510,7 @@
       <button id="p1f-load">Load package</button>
       <div id="p1f-info">No package loaded — identity + education will still fill from profile.</div>
       <button id="p1f-run" class="p1f-primary">⚡ Autofill now</button>
+      <button id="p1f-stop" class="p1f-stop" type="button" hidden>■ Stop autofill (Esc)</button>
       <div class="p1f-progress-title">Run progress</div>
       <div id="p1f-progress" aria-live="polite"></div>
       <div class="p1f-hint">Review every field, then use the portal's native Submit button yourself.</div>
@@ -1589,6 +1620,19 @@
     }
   };
 
+  const stopButtons = () => [box.querySelector('#p1f-stop'), box.querySelector('#p1f-stop-head')];
+  const requestStop = () => {
+    if (!RUN.active || RUN.stopped) return;
+    RUN.stopped = true;
+    stopButtons().forEach((b) => { b.disabled = true; });
+    box.querySelector('#p1f-stop').textContent = 'Stopping…';
+    log('■ stop requested — finishing the current step, then stopping');
+  };
+  stopButtons().forEach((b) => { b.onclick = (e) => { e.preventDefault(); e.stopPropagation(); requestStop(); }; });
+  // Only a real key press from the human counts; synthetic events from the fill never stop a run.
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && e.isTrusted && RUN.active) requestStop();
+  }, true);
   box.querySelector('#p1f-run').onclick = async () => {
     const runButton = box.querySelector('#p1f-run');
     const qaScore = Number(pkg?.resume_qa?.ats_alignment_score);
@@ -1607,6 +1651,12 @@
     }
     runButton.disabled = true;
     runButton.textContent = 'Autofilling…';
+    RUN.active = true;
+    RUN.stopped = false;
+    box.classList.add('p1f-running');
+    // The panel is click-through during a run; the Stop controls must stay clickable.
+    stopButtons().forEach((b) => { b.hidden = false; b.disabled = false; b.style.pointerEvents = 'auto'; });
+    box.querySelector('#p1f-stop').textContent = '■ Stop autofill (Esc)';
     // Greenhouse places form controls beneath the fixed sidebar. Trusted CDP
     // clicks must reach the portal control, not the transparent sidebar layer.
     // Keep progress visible while making the sidebar click-through for the run.
@@ -1629,9 +1679,17 @@
       log('--- autofill done --- REVIEW before submit');
       if (pkg && pkg.approved === true) log('approval recorded; human Submit still required');
     } catch (error) {
-      log(`autofill failed: ${error?.stack || error}`);
-      step('validation', 'failed', String(error?.message || error));
+      if (error instanceof StopRequested) {
+        log('■ autofill stopped by you. Fields filled before the stop are kept — review every field.');
+        step('validation', 'manual', 'Stopped by you — review the form manually');
+      } else {
+        log(`autofill failed: ${error?.stack || error}`);
+        step('validation', 'failed', String(error?.message || error));
+      }
     } finally {
+      RUN.active = false;
+      box.classList.remove('p1f-running');
+      stopButtons().forEach((b) => { b.hidden = true; b.disabled = false; });
       box.style.pointerEvents = '';
       runButton.disabled = false;
       runButton.textContent = '↻ Run autofill again';

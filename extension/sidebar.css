@@ -92,3 +92,14 @@
   border-radius: 6px; padding: 8px; font-family: ui-monospace, monospace; font-size: 11px;
   white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; display: block; min-height: 42px;
 }
+
+/* Manual stop: stays clickable while the rest of the panel is click-through during a run. */
+#p1f-sidebar.p1f-running #p1f-stop,
+#p1f-sidebar.p1f-running #p1f-stop-head { pointer-events: auto !important; }
+#p1f-sidebar button.p1f-stop { background: #dc2626; color: #fff; border-color: #dc2626; font-size: 14px; }
+#p1f-sidebar button.p1f-stop:hover { background: #b91c1c; }
+#p1f-sidebar button.p1f-stop:disabled,
+#p1f-sidebar .p1f-head #p1f-stop-head:disabled { opacity: .6; cursor: wait; }
+#p1f-sidebar .p1f-head #p1f-stop-head { background: #dc2626; }
+#p1f-sidebar [hidden] { display: none !important; }
+#p1f-sidebar.p1f-collapsed.p1f-running #p1f-min { display: none !important; }

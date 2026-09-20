@@ -34,8 +34,8 @@ class ExtensionContractTests(unittest.TestCase):
     def test_manifest_and_visible_build_version_match(self):
         manifest = json.loads((EXTENSION / "manifest.json").read_text())
         content = (EXTENSION / "content.js").read_text()
-        self.assertEqual(manifest["version"], "0.6.13")
-        self.assertIn("P1 Autofill v0.6.13", content)
+        self.assertEqual(manifest["version"], "0.6.14")
+        self.assertIn("P1 Autofill v0.6.14", content)
 
     def test_short_no_cannot_fuzzy_match_latino(self):
         content = (EXTENSION / "content.js").read_text()
@@ -72,6 +72,15 @@ class ExtensionContractTests(unittest.TestCase):
         profile = json.loads((EXTENSION / "profile.default.json").read_text())
         self.assertIn("opt_cpt_status", profile["choices"])
         self.assertEqual(profile["choices"]["opt_cpt_status"], [])
+
+    def test_manual_stop_control_exists_and_interrupts_waits(self):
+        content = (EXTENSION / "content.js").read_text()
+        self.assertIn('id="p1f-stop"', content)
+        self.assertIn('id="p1f-stop-head"', content)
+        self.assertIn("e.key === 'Escape' && e.isTrusted", content)
+        self.assertIn("if (err instanceof StopRequested) throw err;", content)
+        # Waits must be interruptible, and the per-field catch must not swallow a stop.
+        self.assertIn("if (RUN.stopped) { reject(new StopRequested()); return; }", content)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-09-19 — P1 Autofill v0.6.14: manual stop
+
+### Added
+- **Stop autofill.** A red "Stop autofill (Esc)" button in the panel and a stop icon in the header
+  (also shown when the panel is collapsed) appear while a run is active. Pressing Esc does the same.
+  Previously a run could not be interrupted until every pass finished. Stopping interrupts pending
+  waits and all fill loops; fields already filled are kept and the run is marked for manual review.
+  Submit is never clicked.
+
 ## 2026-09-19 — Core hardening (engine + P1 Autofill v0.6.13)
 
 ### Fixed

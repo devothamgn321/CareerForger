@@ -108,7 +108,7 @@ Built:
 - staged application packages with embedded PDF bytes
 - Scouting Policy v2 for public Greenhouse, Lever, and Ashby boards
 - read-only approval dashboard generation
-- P1 Autofill v0.6.13 with guarded DOM mappings; 32 regression tests
+- P1 Autofill v0.6.14 with guarded DOM mappings; 33 regression tests
 
 Not built:
 

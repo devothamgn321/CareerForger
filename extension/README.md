@@ -1,4 +1,4 @@
-# P1 One-Click Autofill Engine — v0.6.13
+# P1 One-Click Autofill Engine — v0.6.14
 
 Jobright-style, one button, whole form in a single pass. Local-only, **no backend**, nothing
 about you leaves the machine. The engine is unified: named adapters cover Ashby, Greenhouse,
