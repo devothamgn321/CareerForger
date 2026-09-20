@@ -910,7 +910,11 @@
       citizenship_country: p.citizenship_country || '',
       linkedin: p.linkedin, portfolio: p.portfolio, github: p.github, current_company: p.current_company,
       start_date: p.earliest_start, salary: a.salary || '', how_heard: a.how_heard || 'Company careers page',
-      why_company: a.why_company || '', why_role: a.why_role || ''
+      why_company: a.why_company || '', why_role: a.why_role || '',
+      // Free-text versions of eligibility questions ("If so, please explain"). Blank = manual.
+      sponsorship: p.sponsorship_explanation || '',
+      immediate_sponsorship: p.immediate_sponsorship_explanation || '',
+      gpa: p.gpa || (Array.isArray(p.education) && p.education[0] && p.education[0].gpa) || ''
     };
     return map[field];
   }
@@ -1501,11 +1505,11 @@
 
   const box = document.createElement('div');
   box.id = 'p1f-sidebar';
-  box.dataset.p1Version = '0.6.15';
+  box.dataset.p1Version = '0.6.16';
   box.classList.add('p1f-collapsed');
   box.innerHTML = `
     <div class="p1f-head">
-      <span class="p1f-title">P1 Autofill v0.6.15</span>
+      <span class="p1f-title">P1 Autofill v0.6.16</span>
       <span id="p1f-ats"></span>
       <span class="p1f-head-actions">
         <button id="p1f-stop-head" type="button" title="Stop autofill (Esc)" aria-label="Stop autofill" hidden>■</button>

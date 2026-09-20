@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-09-19 — P1 Autofill v0.6.16: free-text sponsorship and GPA
+
+### Fixed
+- **"If so, please explain" sponsorship questions** rendered as text boxes were skipped. They now fill
+  from `sponsorship_explanation` / `immediate_sponsorship_explanation` in the profile (blank by
+  default, so they stay manual).
+- **GPA text fields** were detected but never filled. They now use `gpa`, or the first education
+  entry's `gpa`.
+
 ## 2026-09-19 — P1 Autofill v0.6.15: STEM OPT answers from the profile
 
 ### Changed
