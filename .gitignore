@@ -2,6 +2,7 @@
 config.json
 private/
 extension/profile.local.json
+extension/packages/
 
 # Application state and artifacts
 ledger.sqlite

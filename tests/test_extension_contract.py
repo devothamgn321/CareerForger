@@ -34,8 +34,8 @@ class ExtensionContractTests(unittest.TestCase):
     def test_manifest_and_visible_build_version_match(self):
         manifest = json.loads((EXTENSION / "manifest.json").read_text())
         content = (EXTENSION / "content.js").read_text()
-        self.assertEqual(manifest["version"], "0.6.16")
-        self.assertIn("P1 Autofill v0.6.16", content)
+        self.assertEqual(manifest["version"], "0.6.17")
+        self.assertIn("P1 Autofill v0.6.17", content)
 
     def test_short_no_cannot_fuzzy_match_latino(self):
         content = (EXTENSION / "content.js").read_text()

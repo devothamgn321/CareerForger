@@ -97,6 +97,21 @@ is required by the current architecture.
    extension, and never commit the local profile. `extension/PROFILE_GUIDE.md` lists every field
    and its accepted options; `extension/profile.example.json` is a filled-in fictional example.
 
+6. One application, end to end:
+
+   ```bash
+   python3.12 ajos.py ingest private/scouting/jds/acme_pm.txt --url https://jobs.lever.co/acme/<id>
+   # any model executes TICKET_tailor.md / TICKET_answers.md, and optionally writes
+   # RESULT_cover_letter.tex from examples/COVER_LETTER_TEMPLATE.example.tex
+   python3.12 ajos.py advance <app_id>
+   ```
+
+   `advance` runs resume QA and cover-letter QA, stages `package.json`, and publishes it into
+   `extension/packages/` (git-ignored). Open the job page: the sidebar shows
+   **Auto-loaded: Company — Role**, and Run autofill attaches the tailored resume and cover letter.
+   Packages match only on the job's own URL or job id, never on company name alone. You review
+   and click Submit, then `python3.12 ajos.py mark <app_id> submitted` removes it from auto-load.
+
 ## Current status
 
 Built:
@@ -109,7 +124,7 @@ Built:
 - staged application packages with embedded PDF bytes
 - Scouting Policy v2 for public Greenhouse, Lever, and Ashby boards
 - read-only approval dashboard generation
-- P1 Autofill v0.6.16 with guarded DOM mappings; 33 regression tests
+- P1 Autofill v0.6.17 with guarded DOM mappings; 40 regression tests
 
 Not built:
 

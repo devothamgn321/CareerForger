@@ -1,0 +1,34 @@
+% CareerForger cover-letter chassis. Copy to RESULT_cover_letter.tex in the application folder
+% and replace every %%PLACEHOLDER%%. Rules: 1 page, 250-350 words of body, no \href, no brackets,
+% every claim traceable to your Evidence Pack (numbers only from its metrics bank), same header
+% location as the tailored resume. Escape & % $ # _ as \& \% \$ \# \_.
+\documentclass[letterpaper,11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage[expansion=false]{microtype}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{10pt}
+\raggedright
+\begin{document}
+
+\begin{center}
+{\Large \textbf{%%FULL_NAME_CAPS%%}}\\
+\vspace{1pt}
+%%EMAIL%% $\cdot$ %%PHONE%% $\cdot$ %%LOCATION%% $\cdot$ %%LINKEDIN%%
+\end{center}
+
+%%DATE%%
+
+Hiring Team\\
+%%COMPANY%%
+
+Dear %%COMPANY%% Hiring Team,
+
+%%BODY%%
+
+Sincerely,\\
+%%FULL_NAME%%
+
+\end{document}

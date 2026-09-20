@@ -51,7 +51,44 @@ chrome.action.onClicked.addListener(async (tab) => {
   }
 });
 
+// Package bridge: CareerForger publishes packages/<app_id>.json + packages/index.json into this
+// folder. Match strictly on the job's own URL or job id, never on company name alone, so the
+// wrong tailored resume can never be attached.
+function jobTokens(url) {
+  const tokens = new Set();
+  const text = String(url || '');
+  const uuid = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
+  for (const m of text.matchAll(uuid)) tokens.add(m[0].toLowerCase());
+  // Whole numeric ids only (Greenhouse 7773680003, gh_jid=...), never digit runs inside a UUID.
+  for (const m of text.replace(uuid, ' ').matchAll(/(?<![0-9A-Za-z])\d{6,}(?![0-9A-Za-z])/g)) tokens.add(m[0]);
+  return tokens;
+}
+function packageMatches(entry, pageUrl) {
+  let page;
+  try { page = new URL(pageUrl); } catch (e) { return false; }
+  const pagePath = page.pathname.replace(/\/(apply|application)\/?$/i, '').replace(/\/$/, '');
+  if (entry.host && entry.host === page.host.toLowerCase() && entry.path &&
+      (pagePath === entry.path || pagePath.startsWith(entry.path + '/'))) return true;
+  const pageTokens = jobTokens(pageUrl);
+  for (const t of jobTokens(entry.apply_url)) if (pageTokens.has(t)) return true;
+  return false;
+}
+async function findPackage(pageUrl) {
+  const res = await fetch(chrome.runtime.getURL('packages/index.json'), { cache: 'no-store' });
+  if (!res.ok) return null;
+  const index = await res.json();
+  const entry = (index.packages || []).find((e) => packageMatches(e, pageUrl));
+  if (!entry) return null;
+  const pkgRes = await fetch(chrome.runtime.getURL(entry.file), { cache: 'no-store' });
+  return pkgRes.ok ? await pkgRes.json() : null;
+}
+
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.action === 'FIND_PACKAGE') {
+    findPackage(msg.url).then((p) => sendResponse({ package: p }))
+      .catch(() => sendResponse({ package: null }));
+    return true; // async
+  }
   if (msg.action === 'GET_PROFILE') {
     chrome.storage.local.get('user_profile', (d) => sendResponse(d.user_profile || null));
     return true; // async

@@ -73,5 +73,9 @@
   "identity": {
     "name": "Candidate Name",
     "email": "candidate@example.com"
-  }
+  },
+  "publish_to_extension": true,
+  "extension_dirs": [
+    "extension"
+  ]
 }

@@ -110,7 +110,7 @@ def stage(app_dir: Path, app_id: str, jd: dict, cfg: dict, dup_note: str = "none
         package["profile"] = json.loads(profile_path.read_text())
     cover = app_dir / "RESULT_cover_letter.pdf"
     if cover.exists():
-        company_slug = re.sub(r"[^A-Za-z0-9]", "", jd["company"])[:20]
+        company_slug = re.sub(r"[^A-Za-z0-9]", "", re.split(r"[(—–-]", jd["company"])[0])[:20]
         package["cover_letter_filename"] = (
             f"{filename_prefix}_{company_slug}_Cover_Letter.pdf")
         package["cover_letter_data_base64"] = base64.b64encode(cover.read_bytes()).decode()
@@ -118,6 +118,11 @@ def stage(app_dir: Path, app_id: str, jd: dict, cfg: dict, dup_note: str = "none
         package["cover_letter_filename"] = None
         package["cover_letter_data_base64"] = None
     (app_dir / "package.json").write_text(json.dumps(package, indent=2))
+    # Bridge: make the package visible to the extension so the sidebar auto-loads it.
+    published = []
+    if cfg.get("publish_to_extension"):
+        from core import publish as _publish
+        published = _publish.publish(package, cfg)
 
     # friction fix: drop a properly-named copy of the PDF in ~/Downloads so
     # portals the extension can't inject into are a drag-and-drop away
@@ -136,4 +141,5 @@ def stage(app_dir: Path, app_id: str, jd: dict, cfg: dict, dup_note: str = "none
         app_id=app_id, ts=package["staged_at"],
         wa_flags="; ".join(wa.get("flags", [])[:3]) or "none found",
         dup_note=dup_note, url=jd["url"], export_note=export_note))
-    return {"package": str(app_dir / "package.json"), "checklist": str(app_dir / "CHECKLIST.md")}
+    return {"package": str(app_dir / "package.json"), "checklist": str(app_dir / "CHECKLIST.md"),
+            "published": published}

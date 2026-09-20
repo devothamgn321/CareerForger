@@ -5,6 +5,7 @@
   python3 ajos.py advance <app_id>              validate ticket results -> QA -> stage (or bounce back)
   python3 ajos.py status [app_id]               ledger view / event history
   python3 ajos.py mark <app_id> <state>         manual transitions (submitted, outcome_*, dropped)
+  python3 ajos.py publish <app_id>              re-send a staged package to the extension auto-load
   python3 ajos.py chunks                        chunk_stats — the learning loop's raw material
   python3 ajos.py scout                         scan Greenhouse/Lever/Ashby boards -> ranked JD queue
   python3 ajos.py reflect                       generate weekly reflection ticket (slow loop)
@@ -20,7 +21,7 @@ from pathlib import Path
 AJOS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(AJOS_DIR))
 
-from core import ledger, normalize, qa, reflect, retrieve, route, scout, stage, taskpack  # noqa: E402
+from core import cover, ledger, normalize, publish, qa, reflect, retrieve, route, scout, stage, taskpack  # noqa: E402
 
 CONFIG_PATH = AJOS_DIR / "config.json"
 if not CONFIG_PATH.exists():
@@ -113,12 +114,25 @@ def cmd_ingest(jd_file: str, url: str = ""):
     print(f"\nNEXT: have any model execute the tickets, then: python3 ajos.py advance {app_id}")
 
 
+def _app_dir(app) -> Path:
+    """The ledger stores absolute paths, which break when the workspace moves. Fall back to
+    the folder name under applications_dir."""
+    stored = Path(app["app_dir"]) if app["app_dir"] else None
+    if stored and stored.exists():
+        return stored
+    if stored:
+        local = (AJOS_DIR / CFG["applications_dir"]).resolve() / stored.name
+        if local.exists():
+            return local
+    return stored
+
+
 def cmd_advance(app_id: str):
     con = ledger.connect(AJOS_DIR / CFG["db_path"])
     app = ledger.get_application(con, app_id)
     if not app:
         sys.exit(f"unknown app_id {app_id}")
-    app_dir = Path(app["app_dir"])
+    app_dir = _app_dir(app)
     jd = json.loads((app_dir / "jd.json").read_text())
 
     if app["status"] == "tailoring":
@@ -154,11 +168,21 @@ def cmd_advance(app_id: str):
         app = ledger.get_application(con, app_id)
 
     if app["status"] == "qa_passed":
+        cover_result = cover.check(app_dir, jd, CFG)
+        if cover_result is not None:
+            for k, v in cover_result["checks"].items():
+                print(f"[cover] {k}: {v}")
+            if not cover_result["passed"]:
+                print("[cover] FAILED — fix RESULT_cover_letter.tex, then run advance again:\n  - "
+                      + "\n  - ".join(cover_result["failures"]))
+                return
         dups = ledger.similar_company_recent(con, jd["company"])
         dup_note = "; ".join(f"{d['app_id']}({d['status']})" for d in dups if d["app_id"] != app_id) or "none"
         out = stage.stage(app_dir, app_id, jd, CFG, dup_note)
         ledger.transition(con, app_id, "staged", "stager", out["package"])
         print(f"[stage] APPROVAL PACKAGE READY:\n        {out['package']}\n        {out['checklist']}")
+        for where in out.get("published", []):
+            print(f"[bridge] auto-load ready in {where} — open the job page and click Run autofill")
         print(f"        You review + click submit, then: python3 ajos.py mark {app_id} submitted")
 
 
@@ -183,10 +207,12 @@ def cmd_mark(app_id: str, state: str):
     con = ledger.connect(AJOS_DIR / CFG["db_path"])
     new = ledger.transition(con, app_id, state, "human")
     print(f"[mark] {app_id} -> {new}")
+    if new not in ("staged",):
+        publish.unpublish(app_id, CFG)  # stop the sidebar auto-loading a finished application
     # learning loop: positive outcome credits the evidence chunks that resume used
     if new in ("outcome_callback", "outcome_interview", "outcome_offer"):
         app = ledger.get_application(con, app_id)
-        meta_p = Path(app["app_dir"]) / "RESULT_tailor_meta.json" if app["app_dir"] else None
+        meta_p = _app_dir(app) / "RESULT_tailor_meta.json" if app["app_dir"] else None
         if meta_p and meta_p.exists():
             used = json.loads(meta_p.read_text()).get("used_chunk_ids", [])
             for cid in used:
@@ -194,6 +220,19 @@ def cmd_mark(app_id: str, state: str):
                             "WHERE chunk_id=?", (cid,))
             con.commit()
             print(f"[learn] credited {len(used)} chunks for {new}")
+
+
+def cmd_publish(app_id: str):
+    """Re-publish an already staged package to the extension auto-load folder."""
+    con = ledger.connect(AJOS_DIR / CFG["db_path"])
+    app = ledger.get_application(con, app_id)
+    if not app:
+        sys.exit(f"unknown app_id {app_id}")
+    pkg_path = _app_dir(app) / "package.json"
+    if not pkg_path.exists():
+        sys.exit(f"no package.json yet for {app_id} (status {app['status']})")
+    for where in publish.publish(json.loads(pkg_path.read_text()), CFG):
+        print(f"[bridge] auto-load ready in {where}")
 
 
 def cmd_scout():
@@ -278,6 +317,8 @@ if __name__ == "__main__":
     elif args[0] == "mark":
         cmd_mark(args[1], args[2])
         _export()
+    elif args[0] == "publish":
+        cmd_publish(args[1])
     elif args[0] == "chunks":
         cmd_chunks()
     elif args[0] == "scout":

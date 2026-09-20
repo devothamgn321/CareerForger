@@ -9,12 +9,11 @@
   const IS_TOP = window.top === window.self;
 
   const getProfile = (pkg) => new Promise((resolve, reject) => {
-    if (pkg?.profile) {
-      resolve(pkg.profile);
-      return;
-    }
+    // The live profile in chrome.storage wins: a package's embedded copy is a snapshot from
+    // staging day and goes stale when the profile changes. It is only a fallback.
     if (!globalThis.chrome?.storage?.local) {
-      reject(new Error('profile unavailable: package has no embedded profile and chrome.storage is unavailable'));
+      if (pkg?.profile) { resolve(pkg.profile); return; }
+      reject(new Error('profile unavailable: this page lost its connection to the extension. Refresh the page (Cmd+R) and run again.'));
       return;
     }
     chrome.storage.local.get('user_profile', async (data) => {
@@ -1511,11 +1510,11 @@
 
   const box = document.createElement('div');
   box.id = 'p1f-sidebar';
-  box.dataset.p1Version = '0.6.16';
+  box.dataset.p1Version = '0.6.17';
   box.classList.add('p1f-collapsed');
   box.innerHTML = `
     <div class="p1f-head">
-      <span class="p1f-title">P1 Autofill v0.6.16</span>
+      <span class="p1f-title">P1 Autofill v0.6.17</span>
       <span id="p1f-ats"></span>
       <span class="p1f-head-actions">
         <button id="p1f-stop-head" type="button" title="Stop autofill (Esc)" aria-label="Stop autofill" hidden>■</button>
@@ -1602,9 +1601,11 @@
     detectionObserver.observe(document.documentElement, { childList: true, subtree: true });
   }
 
-  box.querySelector('#p1f-load').onclick = () => {
-    try {
-      pkg = JSON.parse(box.querySelector('#p1f-pkg').value);
+  // ------------------------------------------------------------ package bridge
+  // Packages staged by CareerForger are published into this extension's packages/ folder.
+  // The background worker finds the one whose apply URL matches this page.
+  function usePackage(obj, source) {
+      pkg = obj;
       if (pkg.resume_data_base64) {
         const bin = atob(pkg.resume_data_base64);
         pkg.resumeBytes = Uint8Array.from(bin, (c) => c.charCodeAt(0)).buffer;
@@ -1614,10 +1615,11 @@
         pkg.clBytes = Uint8Array.from(bin, (c) => c.charCodeAt(0)).buffer;
       }
       box.querySelector('#p1f-info').textContent =
-        `${pkg.company} — ${pkg.role} | approved=${pkg.approved === true} | ` +
-        `resume=${pkg.resume_filename || 'none'} | ` +
+        (source === 'auto' ? 'Auto-loaded: ' : '') +
+        `${pkg.company} — ${pkg.role} | resume=${pkg.resume_filename || 'none'} | ` +
+        `cover letter=${pkg.cover_letter_filename || 'none'} | ` +
         `AJOS=${pkg.resume_qa?.ats_alignment_score ?? 'legacy package'}`;
-      log(`package loaded; approved=${pkg.approved === true}`);
+      log(`package ${source === 'auto' ? 'auto-loaded' : 'loaded'}: ${pkg.company} — ${pkg.role}`);
       if (pkg.resume_qa) {
         log(
           `resume QA: passed=${pkg.resume_qa.passed === true}; ` +
@@ -1632,11 +1634,27 @@
           ? `Tailored resume ready: ${pkg.resume_filename}`
           : 'Package loaded, but no embedded resume was found'
       );
+  }
+  box.querySelector('#p1f-load').onclick = () => {
+    try {
+      usePackage(JSON.parse(box.querySelector('#p1f-pkg').value), 'paste');
     } catch (e) {
       log('package JSON parse error: ' + e.message);
       step('package', 'failed', e.message);
     }
   };
+  let autoLoadTried = false;
+  const autoLoadPackage = () => new Promise((resolve) => {
+    if (pkg || !globalThis.chrome?.runtime?.sendMessage) { resolve(false); return; }
+    autoLoadTried = true;
+    try {
+      chrome.runtime.sendMessage({ action: 'FIND_PACKAGE', url: location.href }, (res) => {
+        if (chrome.runtime.lastError || !res || !res.package) { resolve(false); return; }
+        try { usePackage(res.package, 'auto'); resolve(true); } catch (e) { resolve(false); }
+      });
+    } catch (e) { resolve(false); }
+  });
+  autoLoadPackage();
 
   const stopButtons = () => [box.querySelector('#p1f-stop'), box.querySelector('#p1f-stop-head')];
   const requestStop = () => {
@@ -1680,6 +1698,7 @@
     // Keep progress visible while making the sidebar click-through for the run.
     box.style.pointerEvents = 'none';
     box.querySelector('#p1f-progress').innerHTML = '';
+    if (!pkg) await autoLoadPackage();
     step(
       'package',
       pkg ? (pkg.resumeBytes ? 'done' : 'manual') : 'manual',

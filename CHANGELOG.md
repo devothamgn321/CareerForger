@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-09-19 — Package bridge (P1 Autofill v0.6.17)
+
+### Added
+- **Auto-load.** `advance` publishes each staged package into `extension/packages/` with an
+  `index.json`. The sidebar asks the background worker for the package whose apply URL or job id
+  matches the open page and loads it without copy-paste; Run autofill attaches the tailored resume
+  and cover letter. Matching never uses company name alone, so a wrong resume cannot be attached.
+  `ajos.py publish <app_id>` re-sends a package; `mark` (submitted, dropped, outcomes) removes it.
+  Controlled by `publish_to_extension` and `extension_dirs` in the config.
+- **Cover letters.** `examples/COVER_LETTER_TEMPLATE.example.tex` plus deterministic QA in
+  `core/cover.py` (placeholders filled, 200–420 body words, company named, forbidden patterns,
+  banned claims, compiles to one page). `advance` runs it before staging when
+  `RESULT_cover_letter.tex` exists.
+- `tests/test_bridge.py`: publish/unpublish, URL/job-id matching, cover-letter QA.
+
+### Fixed
+- The live profile in `chrome.storage` now wins over the snapshot embedded in a package, so older
+  packages cannot re-apply stale answers.
+- Ledger paths that no longer exist (moved workspace) fall back to the folder under
+  `applications_dir`.
+- Cover-letter filenames drop descriptors in parentheses, matching resume filenames.
+
 ## 2026-09-19 — Profile template and guide
 
 ### Added
