@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-09-19 — P1 Autofill v0.6.15: STEM OPT answers from the profile
+
+### Changed
+- **STEM OPT extension, E-Verify, and I-983 questions** now have their own field, `choices.stem_opt`.
+  When a profile sets it (for example `["Yes"]` for a candidate in a STEM-designated degree who
+  will use the extension), those prompts are answered from it. The public default is empty, so they
+  stay blank for human review as before. "Are you currently on STEM OPT?" and "authorized for any
+  employer without restriction" are always left for the human.
+
 ## 2026-09-19 — P1 Autofill v0.6.14: manual stop
 
 ### Added

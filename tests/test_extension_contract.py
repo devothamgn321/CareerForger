@@ -34,8 +34,8 @@ class ExtensionContractTests(unittest.TestCase):
     def test_manifest_and_visible_build_version_match(self):
         manifest = json.loads((EXTENSION / "manifest.json").read_text())
         content = (EXTENSION / "content.js").read_text()
-        self.assertEqual(manifest["version"], "0.6.14")
-        self.assertIn("P1 Autofill v0.6.14", content)
+        self.assertEqual(manifest["version"], "0.6.15")
+        self.assertIn("P1 Autofill v0.6.15", content)
 
     def test_short_no_cannot_fuzzy_match_latino(self):
         content = (EXTENSION / "content.js").read_text()
@@ -72,6 +72,8 @@ class ExtensionContractTests(unittest.TestCase):
         profile = json.loads((EXTENSION / "profile.default.json").read_text())
         self.assertIn("opt_cpt_status", profile["choices"])
         self.assertEqual(profile["choices"]["opt_cpt_status"], [])
+        # STEM OPT eligibility is candidate-specific: blank means "leave for the human".
+        self.assertEqual(profile["choices"]["stem_opt"], [])
 
     def test_manual_stop_control_exists_and_interrupts_waits(self):
         content = (EXTENSION / "content.js").read_text()

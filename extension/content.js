@@ -249,14 +249,20 @@
   // is its own question whose honest answer differs from plain "authorized to work".
   const ELIGIBILITY_FIELDS = new Set([
     'manual_legal', 'authorized_without_sponsorship', 'sponsorship', 'immediate_sponsorship',
-    'opt_cpt_status', 'employment_eligibility_ack', 'work_auth'
+    'opt_cpt_status', 'stem_opt', 'employment_eligibility_ack', 'work_auth'
   ]);
   function eligibilityIntent(raw) {
     const t = String(raw || '').replace(/\s+/g, ' ').toLowerCase();
     if (!t) return null;
     // Legally ambiguous for F-1/OPT candidates: always left to the human.
-    if (/without\s+(any\s+)?restriction|for\s+any\s+employer|any\s+u\.?s\.?\s+employer|stem\s+opt\s+extension|\bi-?983\b|e-?verify/.test(t)) {
+    if (/without\s+(any\s+)?restriction|for\s+any\s+employer|any\s+u\.?s\.?\s+employer/.test(t)) {
       return 'manual_legal';
+    }
+    // STEM OPT extension / E-Verify / I-983. "Are you currently on STEM OPT?" asks about present
+    // status, not eligibility, so it stays with the human.
+    if (/\bstem\b.{0,20}\bopt\b|\bi-?983\b|e-?verify/.test(t)) {
+      if (/\b(currently|presently|now)\s+(on|in|using|holding|working\s+on)\b.{0,25}\bstem\b/.test(t)) return 'manual_legal';
+      return 'stem_opt';
     }
     const mentionsSponsor = /sponsor/.test(t);
     if (/without\s+(the\s+)?(need\s+(for|of)\s+|requiring\s+|needing\s+)?(any\s+)?(current\s+or\s+future\s+)?(visa\s+|company\s+|employer\s+|employment\s+|immigration\s+)*sponsor/.test(t) ||
@@ -974,6 +980,7 @@
       onsite: ['Yes'], salary_ack: ['Yes'],
       immediate_sponsorship: p.choices.immediate_sponsorship, visa_status: p.choices.visa_status,
       opt_cpt_status: (p.choices.opt_cpt_status && p.choices.opt_cpt_status.length) ? p.choices.opt_cpt_status : null,
+      stem_opt: (p.choices.stem_opt && p.choices.stem_opt.length) ? p.choices.stem_opt : null,
       manual_legal: null,
       us_citizen: p.choices.us_citizen, permanent_resident: p.choices.permanent_resident,
       security_clearance: p.choices.security_clearance, company_referral: p.choices.company_referral,
@@ -1216,6 +1223,7 @@
       { field: 'work_auth', intent: true, wanted: p.choices.work_auth },
       { field: 'sponsorship', intent: true, wanted: p.choices.sponsorship },
       { field: 'immediate_sponsorship', intent: true, wanted: p.choices.immediate_sponsorship },
+      { field: 'stem_opt', intent: true, wanted: p.choices.stem_opt },
       { field: 'relocate', question: /willing to relocate|open to relocat|located in .*(relocat|or nyc)/i, wanted: p.choices.relocate },
       { field: 'onsite', question: /work on-?site|on-?site in our|in-?office|in person|days a week|work from.*office/i, wanted: (p.choices.onsite || ['Yes']) }
     ];
@@ -1312,7 +1320,7 @@
             step(f, ok ? 'done' : 'failed', ok ? `${fname} attached` : `${fname} upload failed`);
           }
           else plan.push({ f, label: f, ok: false, type: 'file', skip: true });
-        } else if (f === 'manual_legal' || (f === 'opt_cpt_status' && !choiceValue(p, f))) {
+        } else if (f === 'manual_legal' || ((f === 'opt_cpt_status' || f === 'stem_opt') && !choiceValue(p, f))) {
           plan.push({ f, label: labelTextFor(el) || f, ok: false, manual: true,
                       note: 'Work-authorization wording left for human review' });
           continue;
@@ -1357,7 +1365,7 @@
     step('identity', coreOk ? 'done' : 'manual', `${coreOk} core field mapping(s) verified`);
     // Yes/No button questions not caught above (onsite, sponsorship rendered as standalone buttons w/ label text)
     for (const f of [
-      'sponsorship', 'immediate_sponsorship', 'authorized_without_sponsorship', 'opt_cpt_status',
+      'sponsorship', 'immediate_sponsorship', 'authorized_without_sponsorship', 'opt_cpt_status', 'stem_opt',
       'onsite', 'work_auth', 'relocate',
       'located_us',
       'eligible_state', 'truth_declaration', 'employment_eligibility_ack',
@@ -1493,11 +1501,11 @@
 
   const box = document.createElement('div');
   box.id = 'p1f-sidebar';
-  box.dataset.p1Version = '0.6.14';
+  box.dataset.p1Version = '0.6.15';
   box.classList.add('p1f-collapsed');
   box.innerHTML = `
     <div class="p1f-head">
-      <span class="p1f-title">P1 Autofill v0.6.14</span>
+      <span class="p1f-title">P1 Autofill v0.6.15</span>
       <span id="p1f-ats"></span>
       <span class="p1f-head-actions">
         <button id="p1f-stop-head" type="button" title="Stop autofill (Esc)" aria-label="Stop autofill" hidden>■</button>
