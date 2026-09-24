@@ -129,7 +129,7 @@
   const FIELD_PATTERNS = {
     first_name: [/first\s*name/i, /given\s*name/i, /^fname$/i],
     last_name: [/last\s*name/i, /family\s*name/i, /surname/i, /^lname$/i],
-    full_name: [/^(full\s*)?name$/i, /your\s*name/i],
+    full_name: [/^(full\s*)?name$/i, /your\s*name/i, /full\s+legal\s+name|legal\s+(full\s+)?name/i],
     email: [/e-?mail/i],
     phone: [/phone|mobile|tel(ephone)?/i],
     address: [/street|address(?!.*email)/i],
@@ -175,7 +175,7 @@
       /currently,?\s+or\s+have\s+you\s+previously,?\s+worked\s+for/i,
       /have\s+you\s+(ever\s+)?(previously\s+)?worked\s+for/i
     ],
-    sms_updates: [/text\s+me\s+updates|sms\s+updates|application\s+updates.*text/i],
+    sms_updates: [/text\s+me\s+updates|sms\s+updates|application\s+updates.*text|consent\s+to\s+receive.{0,40}(sms|text\s+messages?)/i],
     eligible_state: [/resident\s+of\s+the\s+following\s+states|state(s)?\s+in\s+which.*employ/i],
     truth_declaration: [/declare.*(true|truth)|true\s+to\s+the\s+best\s+of\s+my\s+knowledge/i],
     employment_eligibility_ack: [
@@ -188,7 +188,7 @@
       /work\s+without\s+(now\s+or\s+future\s+)?sponsorship/i
     ],
     sponsorship: [/sponsor|visa\s*(sponsorship|support)/i],
-    visa_status: [/visa\s+status|immigration\s+status|current\s+status/i],
+    visa_status: [/visa\s+(status|type)|immigration\s+status|current\s+status|type\s+of\s+visa/i],
     age_18: [/\b(18|eighteen)\s*(years|yrs)?\s*(of\s+age|old)?\s*(or\s+older|\+)|at\s+least\s+(18|eighteen)/i],
     onsite: [
       /in-?office|on-?site|5\s*days\s*a\s*week/i,
@@ -307,6 +307,7 @@
     const exactQuestionOverrides = [
       ['apartment', /address\s*line\s*2|\bapartment\b|\bapt\.?\b\s*(number|no\.?|#)?|\bunit\b\s*(number|no\.?|#)?/i],
       ['located_us', /(?:are\s+you\s+)?(?:currently\s+)?located\s+in\s+(?:the\s+)?(?:u\.?s\.?|united\s+states)/i],
+      ['sms_updates', /consent\s+to\s+receive.{0,60}(sms|text\s+messages?)|recruiting\s+sms|sms\s+messages/i],
       ['age_18', /\b(18|eighteen)\s*(years|yrs)?\s*(of\s+age|old)?\s*(or\s+older|\+)|at\s+least\s+(18|eighteen)|over\s+the\s+age\s+of\s+(18|eighteen)/i],
       ['current_job_location', /confirm\s+you\s+are\s+located\s+where\s+the\s+role\s+is\s+advertised|currently\s+located.*role.*advertised/i],
       // A work-authorization question whose text contains "country" (e.g. "authorized to
@@ -433,14 +434,48 @@
       .find((node) => node !== el && node.matches && node.matches('button,[role=button]'));
     return sibling || null;
   }
+  // Menu lookup, strongest evidence first (AF-019):
+  //  1. the control's own menu (aria-controls, react-select-<id>-listbox, inside its container);
+  //  2. a menu that appeared after THIS control was opened (portals, Oracle, custom widgets);
+  //  3. the single visible menu on the page, while this control is focused/expanded.
+  // Menus that provably belong to another control or the phone-flag list never qualify, so a
+  // stale country list can no longer answer a later question ("No" -> "Norfolk Island +672").
+  const MENU_SELECTOR = '[role=listbox], .select__menu, [id^="react-select-"][id$="-listbox"], ' +
+    '.oj-listbox-drop, .oj-select-results, [role=grid][id*="listbox" i]';
+  const menusBeforeOpen = new WeakMap();
+  function visibleMenus() {
+    const all = Array.from(document.querySelectorAll(MENU_SELECTOR))
+      .filter((menu) => menu.getClientRects().length > 0);
+    return all.filter((menu) => !all.some((other) => other !== menu && other.contains(menu)));
+  }
+  function isForeignMenu(menu, el) {
+    const owner = String(menu.id || menu.querySelector('[id$="-listbox"]')?.id || '')
+      .match(/^react-select-(.+)-listbox$/);
+    if (owner && owner[1] !== (el && el.id)) return true;
+    if (menu.closest('.iti, .iti__dropdown-content, [id^="iti-"]')) return true;
+    const ownerShell = menu.closest('.select-shell');
+    return Boolean(ownerShell && el && !ownerShell.contains(el));
+  }
+  function rememberMenusBeforeOpen(el) {
+    menusBeforeOpen.set(el, new Set(visibleMenus()));
+  }
+  function menuFor(el) {
+    if (!el) return null;
+    const controlled = el.getAttribute && el.getAttribute('aria-controls');
+    const own = (controlled && document.getElementById(controlled)) ||
+      (el.id && document.getElementById(`react-select-${el.id}-listbox`)) ||
+      (comboboxShell(el) || document.body).querySelector(MENU_SELECTOR);
+    if (own && own.getClientRects().length > 0) return own;
+    const before = menusBeforeOpen.get(el) || new Set();
+    const candidates = visibleMenus().filter((menu) => !isForeignMenu(menu, el));
+    const fresh = candidates.filter((menu) => !before.has(menu));
+    if (fresh.length === 1) return fresh[0];
+    const engaged = document.activeElement === el || el.getAttribute('aria-expanded') === 'true';
+    if (engaged && candidates.length === 1) return candidates[0];
+    return own || null;
+  }
   function visibleComboboxOptions(el) {
-    // Only this control's own menu. Reading "whatever list is open" let a stale phone-country
-    // menu answer later questions ("No" matched "Norfolk Island +672").
-    const controlled = el && el.getAttribute && el.getAttribute('aria-controls');
-    const byId = el && el.id && document.getElementById(`react-select-${el.id}-listbox`);
-    const shell = el && comboboxShell(el);
-    const scope = (controlled && document.getElementById(controlled)) || byId ||
-      (shell && shell.querySelector('[role=listbox], .select__menu'));
+    const scope = menuFor(el);
     if (!scope) return [];
     return Array.from(scope.querySelectorAll(
       '[role=option], [role=listbox] li, .select__option, [data-option-index], ' +
@@ -460,6 +495,27 @@
       other.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, bubbles: true }));
       other.blur();
     }
+  }
+  async function openComboboxByKeyboard(el, timeoutMs = 900) {
+    // React Select opens on ArrowDown at the focused input. Coordinate clicks drift when the
+    // page re-renders and can open a neighbouring question instead (AF-019).
+    try { el.focus(); } catch (e) {}
+    for (const init of [
+      { key: 'ArrowDown', code: 'ArrowDown', keyCode: 40 },
+      { key: 'ArrowDown', code: 'ArrowDown', keyCode: 40, altKey: true }
+    ]) {
+      for (const type of ['keydown', 'keyup']) {
+        el.dispatchEvent(new KeyboardEvent(type, { ...init, which: init.keyCode, bubbles: true, cancelable: true }));
+      }
+      const deadline = Date.now() + timeoutMs / 2;
+      while (Date.now() < deadline) {
+        if (menuFor(el) && (el.getAttribute('aria-expanded') === 'true' || visibleComboboxOptions(el).length)) {
+          return { ok: true, method: 'keyboard-arrowdown' };
+        }
+        await sleep(60);
+      }
+    }
+    return { ok: false, error: 'keyboard open did not expand this control' };
   }
   async function waitForComboboxOptions(el, timeoutMs) {
     const deadline = Date.now() + timeoutMs;
@@ -628,7 +684,17 @@
   }
   // Generic React/Ashby/Greenhouse typeahead. An option is successful only after
   // the committed value is read back. One bounded retry handles delayed hydration.
+  function visibleControlFor(el) {
+    // Oracle and other widgets keep the real input hidden and render a visible stand-in.
+    if (el.getClientRects().length > 0) return el;
+    const field = el.closest('[class*="field" i], [class*="question" i], [class*="input-row" i], fieldset, li') ||
+      el.parentElement;
+    return (field && Array.from(field.querySelectorAll(
+      'input[role=combobox], [role=combobox], button[aria-haspopup], input[aria-autocomplete=list], input[type=text]'
+    )).find((node) => node !== el && node.getClientRects().length > 0)) || el;
+  }
   async function setTypeahead(el, wantedArr) {
+    el = visibleControlFor(el);
     const shell = comboboxShell(el);
     for (const w of wantedArr) {
       const typed = el.id === 'candidate-location'
@@ -650,11 +716,20 @@
         }
         closeForeignMenus(el);
         await sleep(100);
+        rememberMenusBeforeOpen(el);
         const toggle = comboboxToggle(el, shell);
         let trustedOpen = { ok: true, method: 'already-open' };
         if (el.getAttribute('aria-expanded') !== 'true') {
-          trustedOpen = await openComboboxWithTrustedClick(toggle || el, el.id);
-          if (!trustedOpen.ok) activateControl(toggle || el);
+          trustedOpen = await openComboboxByKeyboard(el);
+          if (!trustedOpen.ok) {
+            trustedOpen = await openComboboxWithTrustedClick(toggle || el, el.id);
+            if (!trustedOpen.ok) activateControl(toggle || el);
+            // A coordinate click can land on a neighbouring control; only this one counts.
+            if (el.getAttribute('aria-expanded') !== 'true') {
+              closeForeignMenus(el);
+              trustedOpen = await openComboboxByKeyboard(el);
+            }
+          }
         }
         el.dataset.p1TrustedOpen = JSON.stringify(trustedOpen);
         log(`[trusted-open:${el.id || 'anonymous'}] ${JSON.stringify(trustedOpen)}`);
@@ -697,6 +772,14 @@
         }
 
         if (hit) {
+          if (trustedOpen.method === 'keyboard-arrowdown') {
+            // React's own handler on the matched option: deterministic, no coordinates.
+            commitComboboxOption(hit.el);
+            await sleep(250);
+            if (comboboxCommitted(el, shell, w, hit.text)) {
+              return { ok: true, chosen: hit.text, attempts: attempt + 1, method: 'react-option' };
+            }
+          }
           // The trusted-input worker is allowlisted to approved ATS domains and
           // clicks only this already-matched visible option. The worker detaches
           // immediately; committed-value read-back remains mandatory.
@@ -932,6 +1015,7 @@
       phone_country: p.phone_country || (p.address && p.address.country),
       residence_country: p.address && p.address.country,
       citizenship_country: p.citizenship_country || '',
+      visa_status: p.visa_status || '',
       linkedin: p.linkedin, portfolio: p.portfolio, github: p.github, current_company: p.current_company,
       start_date: p.earliest_start, salary: a.salary || '', how_heard: a.how_heard || 'Company careers page',
       why_company: a.why_company || '', why_role: a.why_role || '',
@@ -1529,11 +1613,11 @@
 
   const box = document.createElement('div');
   box.id = 'p1f-sidebar';
-  box.dataset.p1Version = '0.6.18';
+  box.dataset.p1Version = '0.6.19';
   box.classList.add('p1f-collapsed');
   box.innerHTML = `
     <div class="p1f-head">
-      <span class="p1f-title">P1 Autofill v0.6.18</span>
+      <span class="p1f-title">P1 Autofill v0.6.19</span>
       <span id="p1f-ats"></span>
       <span class="p1f-head-actions">
         <button id="p1f-stop-head" type="button" title="Stop autofill (Esc)" aria-label="Stop autofill" hidden>■</button>

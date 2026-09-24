@@ -29,13 +29,22 @@ class ExtensionContractTests(unittest.TestCase):
         self.assertNotIn("trusted-cdp-keyboard", content)
         self.assertNotIn("trusted-cdp-keyboard", background)
         self.assertNotIn("commitComboboxByKeyboard", content)
-        self.assertNotIn("ArrowDown", content)
+        # ArrowDown may OPEN a React Select (keyboard opening cannot hit the wrong control),
+        # but selection must never be blind keyboard stepping: no Enter/ArrowDown pair that
+        # commits whatever option happens to be highlighted.
+        self.assertIn("openComboboxByKeyboard", content)
+        opener = content[content.index("async function openComboboxByKeyboard"):]
+        opener = opener[:opener.index("async function waitForComboboxOptions")]
+        self.assertNotIn("Enter", opener)
+        for line in content.splitlines():
+            if "ArrowDown" in line:
+                self.assertNotIn("Enter", line)
 
     def test_manifest_and_visible_build_version_match(self):
         manifest = json.loads((EXTENSION / "manifest.json").read_text())
         content = (EXTENSION / "content.js").read_text()
-        self.assertEqual(manifest["version"], "0.6.18")
-        self.assertIn("P1 Autofill v0.6.18", content)
+        self.assertEqual(manifest["version"], "0.6.19")
+        self.assertIn("P1 Autofill v0.6.19", content)
 
     def test_short_no_cannot_fuzzy_match_latino(self):
         content = (EXTENSION / "content.js").read_text()

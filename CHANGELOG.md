@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-09-24 — P1 Autofill v0.6.19: dropdowns without coordinate clicks
+
+### Fixed
+- **v0.6.18 regression: most dropdowns found no options.** Menus were accepted only when they
+  were provably the control's own; portal-rendered menus (Greenhouse variants, Oracle) failed.
+  Lookup is now: own menu, then a menu that appeared after this control was opened, then the
+  single visible menu while this control is focused. Menus owned by another control or the
+  phone-flag list still never qualify.
+- **Coordinate clicks opened the wrong question.** Dropdowns now open with ArrowDown on the
+  focused input (no screen coordinates), and matched options are committed through the
+  widget's own handler. The trusted-click path remains as a fallback. Keyboard is never used
+  to *select* an option.
+- Hidden inputs with a visible stand-in (Oracle) are driven through the visible control.
+- Oracle Recruiting Cloud (`*.fa.*.oraclecloud.com/hcmUI/CandidateExperience/`) added to the
+  trusted-input allowlist.
+- New label matches: "full legal name", "visa type", recruiting-SMS consent.
+
 ## 2026-09-20 — P1 Autofill v0.6.18: dropdown fixes from a live Greenhouse run
 
 ### Fixed

@@ -170,7 +170,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       let y = Number(msg.y);
       const wanted = String(msg.wanted || '').replace(/\s+/g, ' ').trim().toLowerCase();
       const targetKind = msg.targetKind === 'control' ? 'control' : 'option';
-      const allowedAts = /^https:\/\/([^/]+\.)?(greenhouse\.io|ashbyhq\.com|lever\.co)\//i;
+      const allowedAts = /^https:\/\/(([^/]+\.)?(greenhouse\.io|ashbyhq\.com|lever\.co)\/|[a-z0-9-]+\.fa(\.[a-z0-9-]+)?\.oraclecloud\.com\/hcmUI\/CandidateExperience\/)/i;
       if (!allowedAts.test(tabUrl)) {
         sendResponse({ ok: false, error: 'trusted input blocked outside approved ATS domains' });
         return;
@@ -294,7 +294,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       const tabUrl = String(sender.tab?.url || '');
       const elementId = String(msg.elementId || '');
       const text = String(msg.text || '');
-      const allowedAts = /^https:\/\/([^/]+\.)?(greenhouse\.io|ashbyhq\.com|lever\.co)\//i;
+      const allowedAts = /^https:\/\/(([^/]+\.)?(greenhouse\.io|ashbyhq\.com|lever\.co)\/|[a-z0-9-]+\.fa(\.[a-z0-9-]+)?\.oraclecloud\.com\/hcmUI\/CandidateExperience\/)/i;
       if (!allowedAts.test(tabUrl) || !tabId || !elementId || !text || text.length > 200) {
         sendResponse({ ok: false, error: 'trusted text blocked by ATS/input guard' });
         return;
