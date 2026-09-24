@@ -4,7 +4,7 @@
 **Updated:** 2026-09-19
 **Public project name:** CareerForger
 **Internal engine and CLI name:** AJOS
-**Current autofill release:** P1 Autofill v0.6.20
+**Current autofill release:** P1 Autofill v0.6.21
 **Submission model:** Human review and human Submit
 
 ## 1. Executive summary
@@ -120,7 +120,7 @@ flowchart LR
     MANUAL[Manual sources<br/>LinkedIn · company pages · pasted JD]
     CF[CareerForger<br/>local workspace]
     MODEL[Interchangeable model<br/>file-ticket executor]
-    EXT[P1 Autofill v0.6.20<br/>local Chrome extension]
+    EXT[P1 Autofill v0.6.21<br/>local Chrome extension]
     PORTAL[Application portal]
     HUMAN[Human reviewer]
     OUTCOME[Outcome signals]
@@ -411,7 +411,7 @@ The authority order is:
 
 ## 13. P1 Autofill architecture
 
-P1 Autofill v0.6.20 is local, deterministic, and structurally separated from submission.
+P1 Autofill v0.6.21 is local, deterministic, and structurally separated from submission.
 
 ### Detection and discovery
 
@@ -598,7 +598,7 @@ This makes failures diagnosable without relying on invisible model memory.
 | Staged package and named PDF export | Built |
 | Scouting Policy v2 | Built |
 | Read-only approval dashboard | Built |
-| P1 Autofill v0.6.20 | Built and actively hardened |
+| P1 Autofill v0.6.21 | Built and actively hardened |
 | Greenhouse, Ashby, and Lever guarded mappings | Built |
 | DOM-to-application-context bridge | **Not built** |
 | Compact survivor-only scouting inbox | Pending |

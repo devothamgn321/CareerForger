@@ -305,6 +305,7 @@
     const eligibility = eligibilityIntent(visibleLabel);
     if (eligibility) return { field: eligibility, score: 125 };
     const exactQuestionOverrides = [
+      ['county', /^\s*(county|parish|borough)\b/i],
       ['apartment', /address\s*line\s*2|\bapartment\b|\bapt\.?\b\s*(number|no\.?|#)?|\bunit\b\s*(number|no\.?|#)?/i],
       ['located_us', /(?:are\s+you\s+)?(?:currently\s+)?located\s+in\s+(?:the\s+)?(?:u\.?s\.?|united\s+states)/i],
       ['sms_updates', /consent\s+to\s+receive.{0,60}(sms|text\s+messages?)|recruiting\s+sms|sms\s+messages/i],
@@ -507,10 +508,11 @@
     const scope = menuFor(el);
     if (!scope) return [];
     return Array.from(scope.querySelectorAll(
-      '[role=option], [role=listbox] li, .select__option, [data-option-index], ' +
+      '[role=option], [role=row], .cx-select__list-item, [role=listbox] li, .select__option, [data-option-index], ' +
       '[id^="react-select-"][id*="-option-"], .select__menu-list > div'
     )).filter((option) => option.getClientRects().length > 0 &&
-      !/^(loading\.*|no options|no results( found)?|searching\.*)$/i
+      !option.matches('[class*="no-results" i]') &&
+      !/^(loading\.*|no options|no results( found)?|no results were found\.?|searching\.*)$/i
         .test(String(option.textContent || '').trim()));
   }
   function closeForeignMenus(el) {
@@ -589,6 +591,33 @@
       )
     );
   }
+  let CHOICE_CONTEXT = [];
+  function setChoiceContext(p) {
+    const a = (p && p.address) || {};
+    CHOICE_CONTEXT = [a.county, a.state, ...stateVariants(a.state), a.zip]
+      .filter(Boolean).map((v) => String(v).trim().toLowerCase());
+  }
+  function chooseCommaRow(rows, lw) {
+    const parts = (text) => text.toLowerCase().split(',').map((x) => x.trim()).filter(Boolean);
+    const want = parts(lw);
+    if (!want.length) return null;
+    // The wanted value's own qualifiers ("Chicago, Illinois") outrank the profile's address.
+    const context = [...want.slice(1), ...(want.length > 1 ? [] : CHOICE_CONTEXT)];
+    const firstMatches = rows.filter((row) => {
+      const segs = parts(row.text);
+      return segs.length >= 2 && segs[0] === want[0];
+    });
+    if (!firstMatches.length) return null;
+    const score = (row) => parts(row.text).slice(1)
+      .reduce((n, seg) => n + (context.includes(seg) ? 2 : 0) +
+        (context.some((c) => c.length >= 4 && seg.startsWith(c)) ? 1 : 0), 0);
+    const ranked = firstMatches.map((row) => ({ row, n: score(row) })).sort((x, y) => y.n - x.n);
+    // Require the state to agree when we know it: never pick "Baltimore, Fairfield, OH".
+    if (context.length && ranked[0].n === 0) return null;
+    // Two equally good rows (e.g. two counties in the same state) is a guess: leave it manual.
+    if (ranked.length > 1 && ranked[1].n === ranked[0].n) return null;
+    return ranked[0].row;
+  }
   function chooseComboboxOption(options, wanted, typed) {
     const lw = String(wanted).trim().toLowerCase();
     const city = String(typed).trim().toLowerCase().split(',')[0];
@@ -601,8 +630,12 @@
     const esc = (v) => v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const startsWord = (text, w) => w && new RegExp('^' + esc(w) + '(?![a-z0-9])', 'i').test(text);
     const endsWord = (text, w) => w && new RegExp('(?<![a-z0-9])' + esc(w) + '$', 'i').test(text);
-    return rows.find((row) => comparable(row.text) === lw) ||
-      rows.find((row) => startsWord(comparable(row.text), lw)) ||
+    const exact = rows.find((row) => comparable(row.text) === lw);
+    if (exact) return exact;
+    // Address-style rows ("21210, Baltimore, Baltimore City, MD") are decided only by
+    // chooseCommaRow; a loose prefix match there would silently pick the first county.
+    if (rows.some((row) => row.text.split(',').length >= 3)) return chooseCommaRow(rows, lw);
+    return rows.find((row) => startsWord(comparable(row.text), lw)) ||
       rows.find((row) => lw.length >= 3 && endsWord(comparable(row.text), lw)) ||
       (city.length >= 3
         ? rows.find((row) => startsWord(comparable(row.text), city))
@@ -725,6 +758,14 @@
   async function setTypeahead(el, wantedArr) {
     el = visibleControlFor(el);
     const shell = comboboxShell(el);
+    const originalValue = String(readBack(el) || '');
+    const current = originalValue.trim().toLowerCase();
+    if (current && wantedArr.some((w) => {
+      const lw = String(w || '').trim().toLowerCase();
+      return lw && (current === lw || current.split(',')[0].trim() === lw);
+    })) {
+      return { ok: true, chosen: readBack(el), attempts: 0, method: 'already-set' };
+    }
     for (const w of wantedArr) {
       const typed = el.id === 'candidate-location'
         ? String(w).split(',')[0].trim()
@@ -851,6 +892,12 @@
     if (el.getAttribute('aria-expanded') === 'true') {
       const toggle = comboboxToggle(el, shell);
       activateControl(toggle || el);
+    }
+    if (String(readBack(el) || '') !== originalValue && el.tagName === 'INPUT') {
+      inputSetter.call(el, originalValue);
+      fire(el, 'input');
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, bubbles: true }));
+      fire(el, 'change');
     }
     return {
       ok: false,
@@ -1048,6 +1095,7 @@
       phone_country: p.phone_country || (p.address && p.address.country),
       residence_country: p.address && p.address.country,
       citizenship_country: p.citizenship_country || '',
+      county: p.address && p.address.county || '',
       visa_status: p.visa_status || '',
       linkedin: p.linkedin, portfolio: p.portfolio, github: p.github, current_company: p.current_company,
       start_date: p.earliest_start, salary: a.salary || '', how_heard: a.how_heard || 'Company careers page',
@@ -1116,7 +1164,10 @@
   }
   function choiceValue(p, field) {
     const map = {
-      phone_country: [p.phone_country_code, `${p.phone_country} (${p.phone_country_code})`, p.phone_country].filter(Boolean),
+      phone_country: [
+        p.phone_country_code && p.phone_country ? `${p.phone_country_code} (${p.phone_country})` : null,
+        p.phone_country_code, `${p.phone_country} (${p.phone_country_code})`, p.phone_country
+      ].filter(Boolean),
       state: stateVariants(p.address && p.address.state),
       work_auth: p.choices.work_auth,
       located_us: p.choices.located_us || ['Yes'],
@@ -1433,6 +1484,15 @@
     step('scan', 'done', `${fields.length} form controls detected`);
     const plan = [];
     const done = new Set();
+    setChoiceContext(p);
+    const oracleZip = document.querySelector('input.cx-select-input[id^="postalCode-"]');
+    if (oracleZip && p.address && p.address.zip) {
+      checkStop();
+      const r = await setTypeahead(oracleZip, [p.address.zip]);
+      plan.push({ f: 'zip', label: 'Postal Code (address lookup)', ok: r.ok, chosen: r.chosen, el: oracleZip, type: 'combobox' });
+      log(`[oracle-address] zip lookup ${r.ok ? 'chose ' + r.chosen : 'failed'}`);
+      await sleep(600);
+    }
     const handledRadioNames = fillLocationCommitment(p, pkg, plan);
     fillOfficeLocationCheckboxes(pkg, plan);
     step('identity', 'running', 'Filling identity, contact, employer, and location');
@@ -1623,9 +1683,10 @@
           '.select__single-value, [class*="singleValue"], [class*="single-value"], ' +
           '.select__multi-value, [class*="multiValue"], [class*="multi-value"]'
         );
-        const selectedText = String(selected?.textContent || '')
+        const selectedText = String(selected?.textContent || readBack(s.el) || '')
           .replace(/\s+/g, ' ').trim().toLowerCase();
-        const wanted = (s.wanted || []).map((value) => String(value).trim().toLowerCase());
+        const wanted = [...(s.wanted || []), s.chosen, s.chosen && String(s.chosen).split(',')[0]]
+          .filter(Boolean).map((value) => String(value).trim().toLowerCase());
         const matches = wanted.some((value) =>
           selectedText === value || selectedText.startsWith(value) ||
           selectedText.endsWith(value) || value === '+1' && selectedText === '+1'
@@ -1646,11 +1707,11 @@
 
   const box = document.createElement('div');
   box.id = 'p1f-sidebar';
-  box.dataset.p1Version = '0.6.20';
+  box.dataset.p1Version = '0.6.21';
   box.classList.add('p1f-collapsed');
   box.innerHTML = `
     <div class="p1f-head">
-      <span class="p1f-title">P1 Autofill v0.6.20</span>
+      <span class="p1f-title">P1 Autofill v0.6.21</span>
       <span id="p1f-ats"></span>
       <span class="p1f-head-actions">
         <button id="p1f-stop-head" type="button" title="Stop autofill (Esc)" aria-label="Stop autofill" hidden>■</button>

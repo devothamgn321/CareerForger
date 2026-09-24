@@ -37,6 +37,7 @@ Chrome picks up the change.
 | `email`, `phone` | `alex@example.com`, `555-010-0000` | |
 | `phone_country`, `phone_country_code` | `United States`, `+1` | For country-code dropdowns |
 | `address.street/apartment/city/state/zip/country` | `Illinois` or `IL` | State accepts full name or 2-letter code |
+| `address.county` | `Sangamon` | Used by address lookups (Oracle) that list one row per county. Blank = those lookups are left for you |
 | `citizenship_country` | `Canada` | Blank = left for you |
 | `linkedin`, `portfolio`, `github` | full URLs | |
 | `current_company` | `Example Corp` | |

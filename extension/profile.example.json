@@ -14,6 +14,7 @@
     "line1": "123 Sample St",
     "apartment": "Apt 4",
     "city": "Springfield",
+    "county": "Sangamon",
     "state": "Illinois",
     "zip": "62701",
     "country": "United States"

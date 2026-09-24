@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-09-24 — P1 Autofill v0.6.21: Oracle Recruiting Cloud dropdowns and address lookup
+
+### Fixed
+- Oracle `cx-select` menus list options as grid rows (`[role=row]`); they are now read.
+  "No results were found." rows are ignored.
+- Oracle address: the Postal Code lookup is filled first; its row sets City, County and State
+  together. Address-style rows ("21210, Baltimore, Baltimore City, MD") are chosen only when
+  the first part matches exactly and the state/county agree; two equally good rows are left
+  for the human instead of taking the first. New optional `address.county`.
+- County is its own field, never filled with the state.
+- A dropdown that could not be filled gets its original text back (no half-typed values).
+- Phone-code lists: "+1 (United States)" is tried before bare "+1", so "+1 (American Samoa)"
+  cannot win.
+- Dropdown validation reads the input's own value, so correctly filled Oracle fields no longer
+  show as mismatches.
+- `tests/test_choose_option.py` runs the real option chooser in node.
+
 ## 2026-09-24 — P1 Autofill v0.6.20: dropdown diagnostics
 
 ### Added
