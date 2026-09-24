@@ -53,11 +53,13 @@
     "race": [],
     "hispanic": [],
     "lgbtq_identity": [],
+    "transgender": [],
     "veteran": [],
     "disability": [],
     "sexual_orientation": []
   },
   "education": [],
+  "skills_yes": [],
   "never_auto_answer": [
     "government or security forms",
     "legal acknowledgements",

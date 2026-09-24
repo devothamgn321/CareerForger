@@ -1,0 +1,29 @@
+<!doctype html><html><body><form>
+<!-- React-Select-like controls whose menus filter on typed text and show "No options". -->
+<div id="fields"></div>
+<button type="submit">Submit application</button></form>
+<script>
+const Q=[
+ ['country','Country','United States +1|American Samoa +1|Canada +1|Norfolk Island +672'.split('|')],
+ ['q_worked','Have you worked at DoorDash?',['Yes','No']],
+ ['q_sql','Do you have SQL experience?',['Yes','No']],
+ ['q_lead','Do you have experience in leading large strategic cross-functional initiatives?',['Yes','No']],
+ ['q_trans','Do you identify as transgender?',['Yes','No',"I don't wish to answer"]],
+ ['q_priv','Applicant Privacy Acknowledgement',['I acknowledge']],
+];
+const F=document.getElementById('fields');
+Q.forEach(([id,label,opts])=>{const d=document.createElement('div');d.className='select-shell field';
+ d.innerHTML=`<label id="${id}-label" for="${id}">${label}</label><div class="select__single-value" id="${id}-value"></div><input id="${id}" role="combobox" aria-expanded="false" aria-labelledby="${id}-label" aria-autocomplete="list" autocomplete="off">`;
+ F.appendChild(d);const inp=d.querySelector('input');
+ const render=()=>{let m=d.querySelector('.select__menu');if(!m){m=document.createElement('div');m.className='select__menu';d.appendChild(m);}
+  const q=inp.value.trim().toLowerCase();const list=opts.filter(o=>!q||o.toLowerCase().includes(q));
+  m.innerHTML=`<div id="react-select-${id}-listbox" role="listbox" class="select__menu-list"></div>`;const lb=m.firstChild;
+  if(!list.length){lb.innerHTML='<div class="select__menu-notice select__menu-notice--no-options">No options</div>';}
+  list.forEach((o,i)=>{const e=document.createElement('div');e.setAttribute('role','option');e.id=`react-select-${id}-option-${i}`;e.textContent=o;
+   e.addEventListener('mousedown',()=>{d.querySelector('.select__single-value').textContent=o;inp.value='';close();});lb.appendChild(e);});
+  inp.setAttribute('aria-expanded','true');inp.setAttribute('aria-controls',`react-select-${id}-listbox`);};
+ const close=()=>{d.querySelectorAll('.select__menu').forEach(m=>m.remove());inp.setAttribute('aria-expanded','false');inp.removeAttribute('aria-controls');};
+ inp.addEventListener('keydown',e=>{if(e.key==='ArrowDown')render();if(e.key==='Escape')close();});
+ inp.addEventListener('input',render);});
+document.addEventListener('submit',e=>{e.preventDefault();document.body.dataset.sub='yes'});
+</script></body></html>

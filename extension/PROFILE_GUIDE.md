@@ -73,6 +73,12 @@ Free-text versions ("If so, please explain"):
 Always left for you, whatever the profile says: "authorized for **any employer without restriction**"
 and "are you **currently on** STEM OPT".
 
+## Skills (`skills_yes`)
+
+A list of skills you can truthfully say Yes to, e.g. `["SQL", "Python", "Excel"]`. Questions like
+"Do you have SQL experience?" are answered Yes only when the skill is in this list; anything else
+is left for you. It never answers No on its own.
+
 ## Voluntary self-identification (`eeo`)
 
 All optional. Leave any list empty to answer by hand. Use the wording your target forms use.
@@ -82,7 +88,7 @@ All optional. Leave any list empty to answer by hand. Use the wording your targe
 | `gender` | `["Female", "Woman"]`, `["Male", "Man"]`, `["Decline to self-identify"]` |
 | `race` | `["Asian"]`, `["Black or African American"]`, `["White"]`, `["Two or More Races"]`, `["Decline to self-identify"]` |
 | `hispanic` | `["No", "Not Hispanic or Latino"]`, `["Yes"]`, `["Decline to self-identify"]` |
-| `sexual_orientation`, `lgbtq_identity` | `["I don't wish to answer"]` or your own wording |
+| `sexual_orientation`, `lgbtq_identity`, `transgender` | `["I don't wish to answer"]` or your own wording |
 | `veteran` | `["I am not a protected veteran"]`, `["I identify as one or more of the classifications of protected veteran"]`, `["I don't wish to answer"]` |
 | `disability` | `["No, I do not have a disability"]`, `["Yes, I have a disability"]`, `["I don't wish to answer"]` |
 

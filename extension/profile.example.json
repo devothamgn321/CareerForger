@@ -104,6 +104,9 @@
     "lgbtq_identity": [
       "I don't wish to answer"
     ],
+    "transgender": [
+      "I don't wish to answer"
+    ],
     "veteran": [
       "I don't wish to answer",
       "I am not a protected veteran"
@@ -134,6 +137,11 @@
       "still_student": false,
       "gpa": "3.70"
     }
+  ],
+  "skills_yes": [
+    "SQL",
+    "Python",
+    "Excel"
   ],
   "never_auto_answer": [
     "government or security forms",

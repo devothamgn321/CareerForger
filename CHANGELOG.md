@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-09-24 — P1 Autofill v0.6.23: fixes from a live DoorDash (Greenhouse) run
+
+### Fixed
+- A typed spelling that filtered a React Select to "No options" stopped all other spellings, so
+  phone country could fail. Now only a list that is empty before typing stops the search; a
+  failed spelling is cleared before the next one is tried.
+- "Have you worked at <Company>?" is recognised (prior-employment answer).
+
+### Added
+- `skills_yes` profile list: "Do you have SQL experience?"-style questions answer Yes only for
+  listed skills; others stay manual. Judgement questions ("experience leading large strategic
+  initiatives?") are never auto-answered.
+- `eeo.transgender` (blank = manual).
+- Browser fixture `greenhouse_filtering.html`.
+
 ## 2026-09-24 — P1 Autofill v0.6.22: general dropdown handling across portals
 
 ### Added

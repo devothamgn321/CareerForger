@@ -37,6 +37,9 @@ CASES = [
     ("react_select_and_portal.html", profile(), "()=>{const i=document.getElementById('s0x');"
      "i.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true}))}", {
         "v1": "Yes", "v2": "Yes", "v3": "I am not a protected veteran"}),
+    ("greenhouse_filtering.html", profile(), None, {
+        "country-value": "United States +1", "q_worked-value": "No", "q_sql-value": "Yes",
+        "q_lead-value": "", "q_trans-value": "I don't wish to answer", "q_priv-value": ""}),
     ("text_labels.html", profile(), None, {
         "a": "Alex Example", "b": "F-1 OPT", "c": "", "d": "No", "e": "Yes"}),
 ]

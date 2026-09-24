@@ -174,7 +174,8 @@
     ],
     prior_company_employment: [
       /currently,?\s+or\s+have\s+you\s+previously,?\s+worked\s+for/i,
-      /have\s+you\s+(ever\s+)?(previously\s+)?worked\s+for/i
+      /have\s+you\s+(ever\s+)?(previously\s+)?worked\s+(for|at)\b/i,
+      /(former|previous)\s+employee\s+of|previously\s+(been\s+)?employed\s+(by|at)/i
     ],
     sms_updates: [/text\s+me\s+updates|sms\s+updates|application\s+updates.*text|consent\s+to\s+receive.{0,40}(sms|text\s+messages?)/i],
     eligible_state: [/resident\s+of\s+the\s+following\s+states|state(s)?\s+in\s+which.*employ/i],
@@ -206,6 +207,7 @@
     hispanic: [/hispanic|latino/i],
     sexual_orientation: [/sexual\s+orientation/i],
     lgbtq_identity: [/lgbt2?qia|lgbtq|member\s+of\s+the\s+lgbt/i],
+    transgender: [/transgender/i],
     veteran: [/veteran/i],
     disability: [/disabilit/i],
     school: [/school|university|institution/i],
@@ -324,7 +326,9 @@
       ['eligible_state', /resident\s+of\s+the\s+following\s+states|states?\s+in\s+which.*employ/i],
       ['truth_declaration', /declare.*(true|truth)|true\s+to\s+the\s+best\s+of\s+my\s+knowledge/i],
       ['employment_eligibility_ack', /provide\s+documents.*(identity|employment\s+eligibility)/i],
-      ['prior_company_employment', /currently,?\s+or\s+have\s+you\s+previously,?\s+worked\s+for|have\s+you\s+(ever\s+)?(previously\s+)?worked\s+for/i],
+      ['prior_company_employment', /currently,?\s+or\s+have\s+you\s+previously,?\s+worked\s+for|have\s+you\s+(ever\s+)?(previously\s+)?worked\s+(for|at)\b|(former|previous)\s+employee\s+of|previously\s+(been\s+)?employed\s+(by|at)/i],
+      ['transgender', /identify\s+as\s+transgender|\btransgender\b/i],
+      ['skill_experience', /^\s*do\s+you\s+have\s+(any\s+)?(professional\s+|hands[- ]on\s+|working\s+)?(experience|proficiency)\s+(with|in|using)\s+[a-z0-9+#.\/ -]{1,40}\??\s*\*?\s*$|^\s*do\s+you\s+have\s+[a-z0-9+#.\/ -]{1,40}\s+experience\??\s*\*?\s*$/i],
       ['lgbtq_identity', /lgbt2?qia|lgbtq|member\s+of\s+the\s+lgbt/i]
     ];
     for (const [field, pattern] of exactQuestionOverrides) {
@@ -819,6 +823,7 @@
         el.dataset.p1TrustedOpen = JSON.stringify(trustedOpen);
         log(`[trusted-open:${el.id || 'anonymous'}] ${JSON.stringify(trustedOpen)}`);
         let options = await waitForComboboxOptions(el, 2200);
+        const emptyBeforeTyping = !options.length;
         let hit = chooseComboboxOption(options, w, typed);
 
         if (!hit && el.tagName === 'INPUT') {
@@ -861,14 +866,22 @@
         }
         // The list was readable and nothing matched even after typing: a second pass cannot
         // change that. Move on instead of burning seconds (AF-020).
-        if (!hit && options.length) break;
-        // The widget itself says there is nothing to pick (e.g. Oracle's State list before a
-        // city is chosen). Other spellings of the answer cannot change that: stop here.
+        const clearTyped = () => {
+          if (el.tagName === 'INPUT' && String(readBack(el) || '') !== originalValue) {
+            inputSetter.call(el, originalValue);
+            fire(el, 'input');
+          }
+        };
+        if (!hit && options.length) { clearTyped(); break; }
+        // "No options" after OUR typed filter: this spelling is wrong, try the next one with a
+        // clean box. "No results" before typing anything (e.g. Oracle's State list before a
+        // city is chosen): no spelling can help, stop here.
         const menuNow = menuFor(el);
         if (!hit && menuNow && (menuNow.matches('[role=status]') ||
-            menuNow.querySelector('[class*="no-results" i]') ||
+            menuNow.querySelector('[class*="no-results" i], [class*="no-options" i]') ||
             /^no (results|options|matches)/i.test(String(menuNow.textContent || '').trim()))) {
-          giveUp = true;
+          clearTyped();
+          if (emptyBeforeTyping) giveUp = true;
           break;
         }
 
@@ -1189,6 +1202,14 @@
     }
     return [value, code, name, `(US) ${name}`].filter((v, i, all) => all.indexOf(v) === i);
   }
+  function skillAnswer(p, label) {
+    const skills = ((p && p.skills_yes) || []).map((x) => String(x).trim()).filter(Boolean);
+    const text = String(label || '').toLowerCase();
+    const esc = (v) => v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const hit = skills.find((skill) =>
+      new RegExp('(^|[^a-z0-9+#])' + esc(skill.toLowerCase()) + '($|[^a-z0-9+#])').test(text));
+    return hit ? ['Yes'] : null;
+  }
   function choiceValue(p, field) {
     const map = {
       phone_country: [
@@ -1212,6 +1233,7 @@
       eligible_state: ['Yes'], truth_declaration: ['Yes'], employment_eligibility_ack: ['Yes'],
       gender: p.eeo.gender, race: p.eeo.race, hispanic: p.eeo.hispanic, veteran: p.eeo.veteran, disability: p.eeo.disability,
       sexual_orientation: p.eeo && p.eeo.sexual_orientation,
+      transgender: p.eeo && p.eeo.transgender,
       lgbtq_identity: p.eeo && p.eeo.lgbtq_identity,
       current_job_location: null,
       how_heard: (p.choices && p.choices.how_heard) || ['Company careers page', 'Company website', 'Website', 'Other']
@@ -1540,6 +1562,13 @@
       const f = c.field;
       if (['school', 'degree', 'major'].includes(f)) continue; // handled by fillEducation
       const tag = el.tagName;
+      // "Do you have SQL experience?": Yes only for skills the profile lists; anything else is
+      // left for the human (never a guessed No or Yes).
+      const forced = f === 'skill_experience' ? skillAnswer(p, labelTextFor(el)) : null;
+      if (f === 'skill_experience' && !forced) {
+        plan.push({ f, label: labelTextFor(el) || f, ok: false, manual: true, note: 'Skill not in profile skills_yes' });
+        continue;
+      }
       try {
         if (f === 'resume' || f === 'cover_letter') {
           const bytesKey = f === 'resume' ? 'resumeBytes' : 'clBytes';
@@ -1557,7 +1586,7 @@
                       note: 'Work-authorization wording left for human review' });
           continue;
         } else if (tag === 'SELECT') {
-          const w = choiceValue(p, f) || [simpleValue(p, f, pkg)].filter(Boolean);
+          const w = forced || choiceValue(p, f) || [simpleValue(p, f, pkg)].filter(Boolean);
           if (!w || !w.length) continue;
           const r = setSelect(el, w); plan.push({ f, label: f, ok: r.ok, chosen: r.chosen, el, value: w[0] });
         } else if (el.getAttribute && (
@@ -1565,7 +1594,7 @@
           el.getAttribute('aria-autocomplete') === 'list' ||
           (tag === 'BUTTON' && el.getAttribute('aria-haspopup') === 'listbox')
         )) {
-          const w = choiceValue(p, f) || [simpleValue(p, f, pkg)].filter(Boolean);
+          const w = forced || choiceValue(p, f) || [simpleValue(p, f, pkg)].filter(Boolean);
           if (!w || !w.length) continue;
           const r = await setTypeahead(el, w);
           plan.push({ f, label: f, ok: r.ok, chosen: r.chosen, el, wanted: w, type: 'combobox' });
@@ -1604,7 +1633,7 @@
       'eligible_state', 'truth_declaration', 'employment_eligibility_ack',
       'us_citizen', 'permanent_resident', 'security_clearance', 'company_referral', 'prior_company_employment',
       'sms_updates',
-      'how_heard', 'gender', 'race', 'hispanic', 'sexual_orientation', 'lgbtq_identity', 'veteran', 'disability'
+      'how_heard', 'gender', 'race', 'hispanic', 'sexual_orientation', 'lgbtq_identity', 'transgender', 'veteran', 'disability'
     ]) {
       checkStop();
       if (plan.some((s) => s.f === f && s.ok)) continue;
@@ -1735,11 +1764,11 @@
 
   const box = document.createElement('div');
   box.id = 'p1f-sidebar';
-  box.dataset.p1Version = '0.6.22';
+  box.dataset.p1Version = '0.6.23';
   box.classList.add('p1f-collapsed');
   box.innerHTML = `
     <div class="p1f-head">
-      <span class="p1f-title">P1 Autofill v0.6.22</span>
+      <span class="p1f-title">P1 Autofill v0.6.23</span>
       <span id="p1f-ats"></span>
       <span class="p1f-head-actions">
         <button id="p1f-stop-head" type="button" title="Stop autofill (Esc)" aria-label="Stop autofill" hidden>■</button>
