@@ -474,6 +474,35 @@
     if (engaged && candidates.length === 1) return candidates[0];
     return own || null;
   }
+  // Structure-only diagnostics for dropdowns that open but show no readable options. No field
+  // values or personal data: tags, roles, ids, classes and the first option-like texts.
+  const diagnosed = new Set();
+  function describeNode(node) {
+    if (!node || !node.tagName) return null;
+    const cls = String(node.className && node.className.baseVal !== undefined ? node.className.baseVal : node.className || '')
+      .trim().split(/\s+/).slice(0, 3).join('.');
+    return `${node.tagName.toLowerCase()}${node.id ? '#' + node.id : ''}${cls ? '.' + cls : ''}` +
+      `${node.getAttribute('role') ? '[role=' + node.getAttribute('role') + ']' : ''}`;
+  }
+  function diagnoseCombobox(el) {
+    const key = el.id || describeNode(el);
+    if (diagnosed.has(key)) return null;
+    diagnosed.add(key);
+    const menu = menuFor(el);
+    const attrs = ['role', 'aria-controls', 'aria-owns', 'aria-expanded', 'aria-haspopup', 'aria-autocomplete', 'type', 'readonly']
+      .map((a) => el.hasAttribute && el.hasAttribute(a) ? `${a}=${el.getAttribute(a)}` : null).filter(Boolean);
+    const popupish = Array.from(document.querySelectorAll(
+      '[role=listbox], [role=option], [role=grid], [role=menu], [role=dialog], ' +
+      '[class*="dropdown" i], [class*="popup" i], [class*="suggest" i], [class*="listbox" i], [class*="results" i]'
+    )).filter((n) => n.getClientRects().length > 0 && !n.closest('#p1f-sidebar')).slice(0, 8);
+    return {
+      control: describeNode(el), attrs,
+      menu: describeNode(menu),
+      menuChildren: menu ? Array.from(menu.children).slice(0, 3).map((c) =>
+        `${describeNode(c)} "${String(c.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 30)}"`) : [],
+      visiblePopups: popupish.map(describeNode)
+    };
+  }
   function visibleComboboxOptions(el) {
     const scope = menuFor(el);
     if (!scope) return [];
@@ -761,6 +790,10 @@
             options = await waitForComboboxOptions(el, 3500);
             hit = chooseComboboxOption(options, w, typed);
           }
+        }
+        if (!hit && !options.length) {
+          const diag = diagnoseCombobox(el);
+          if (diag) log(`[diag:${el.id || 'anonymous'}] ${JSON.stringify(diag)}`);
         }
         if (!hit) {
           log(
@@ -1613,11 +1646,11 @@
 
   const box = document.createElement('div');
   box.id = 'p1f-sidebar';
-  box.dataset.p1Version = '0.6.19';
+  box.dataset.p1Version = '0.6.20';
   box.classList.add('p1f-collapsed');
   box.innerHTML = `
     <div class="p1f-head">
-      <span class="p1f-title">P1 Autofill v0.6.19</span>
+      <span class="p1f-title">P1 Autofill v0.6.20</span>
       <span id="p1f-ats"></span>
       <span class="p1f-head-actions">
         <button id="p1f-stop-head" type="button" title="Stop autofill (Esc)" aria-label="Stop autofill" hidden>■</button>

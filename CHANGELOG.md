@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-09-24 — P1 Autofill v0.6.20: dropdown diagnostics
+
+### Added
+- When a dropdown opens but shows no readable options, the log gets one `[diag:<id>]` line per
+  control describing its structure (tags, roles, ids, classes, first option-like texts). No
+  field values or personal data. Used to add support for unfamiliar portals such as Oracle.
+
 ## 2026-09-24 — P1 Autofill v0.6.19: dropdowns without coordinate clicks
 
 ### Fixed
