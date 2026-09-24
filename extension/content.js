@@ -47,7 +47,8 @@
     let nodes = [];
     try {
       nodes = Array.from(root.querySelectorAll(
-        'input:not([type=hidden]):not([type=submit]):not([type=button]), textarea, select, [role=combobox], [contenteditable="true"]'));
+        'input:not([type=hidden]):not([type=submit]):not([type=button]), textarea, select, [role=combobox], [contenteditable="true"], ' +
+        'button[aria-haspopup=listbox]'));
     } catch (e) {}
     let all = [];
     try { all = Array.from(root.querySelectorAll('*')); } catch (e) {}
@@ -374,7 +375,7 @@
     fire(el, 'input'); fire(el, 'change'); el.blur();
     return String(readBack(el)).trim() === String(value).trim();
   }
-  function readBack(el) { return el.isContentEditable ? el.textContent : el.value; }
+  function readBack(el) { return el.isContentEditable ? el.textContent : (el.tagName === "BUTTON" ? String(el.textContent || "").trim() : el.value); }
 
   function setSelect(el, wantedArr) {
     const opts = Array.from(el.options || []);
@@ -542,6 +543,18 @@
       while (Date.now() < deadline) {
         if (menuFor(el) && (el.getAttribute('aria-expanded') === 'true' || visibleComboboxOptions(el).length)) {
           return { ok: true, method: 'keyboard-arrowdown' };
+        }
+        await sleep(60);
+      }
+    }
+    // Button-style pickers (Workday, iCIMS) open on a plain click of the focused control itself:
+    // no coordinates involved, so it cannot land on a neighbouring question.
+    if (el.matches && el.matches('button, [role=button], [aria-haspopup=listbox]')) {
+      el.click();
+      const deadline = Date.now() + timeoutMs;
+      while (Date.now() < deadline) {
+        if (menuFor(el) && (el.getAttribute('aria-expanded') === 'true' || visibleComboboxOptions(el).length)) {
+          return { ok: true, method: 'element-click' };
         }
         await sleep(60);
       }
@@ -766,7 +779,9 @@
     })) {
       return { ok: true, chosen: readBack(el), attempts: 0, method: 'already-set' };
     }
+    let giveUp = false;
     for (const w of wantedArr) {
+      if (giveUp) break;
       const typed = el.id === 'candidate-location'
         ? String(w).split(',')[0].trim()
         : String(w).trim();
@@ -806,7 +821,7 @@
         let options = await waitForComboboxOptions(el, 2200);
         let hit = chooseComboboxOption(options, w, typed);
 
-        if (!hit) {
+        if (!hit && el.tagName === 'INPUT') {
           el.focus();
           inputSetter.call(el, typed);
           try {
@@ -843,6 +858,18 @@
               String(option.textContent || '').replace(/\s+/g, ' ').trim()
             ).filter(Boolean).slice(0, 25))
           );
+        }
+        // The list was readable and nothing matched even after typing: a second pass cannot
+        // change that. Move on instead of burning seconds (AF-020).
+        if (!hit && options.length) break;
+        // The widget itself says there is nothing to pick (e.g. Oracle's State list before a
+        // city is chosen). Other spellings of the answer cannot change that: stop here.
+        const menuNow = menuFor(el);
+        if (!hit && menuNow && (menuNow.matches('[role=status]') ||
+            menuNow.querySelector('[class*="no-results" i]') ||
+            /^no (results|options|matches)/i.test(String(menuNow.textContent || '').trim()))) {
+          giveUp = true;
+          break;
         }
 
         if (hit) {
@@ -1535,7 +1562,8 @@
           const r = setSelect(el, w); plan.push({ f, label: f, ok: r.ok, chosen: r.chosen, el, value: w[0] });
         } else if (el.getAttribute && (
           el.getAttribute('role') === 'combobox' ||
-          el.getAttribute('aria-autocomplete') === 'list'
+          el.getAttribute('aria-autocomplete') === 'list' ||
+          (tag === 'BUTTON' && el.getAttribute('aria-haspopup') === 'listbox')
         )) {
           const w = choiceValue(p, f) || [simpleValue(p, f, pkg)].filter(Boolean);
           if (!w || !w.length) continue;
@@ -1707,11 +1735,11 @@
 
   const box = document.createElement('div');
   box.id = 'p1f-sidebar';
-  box.dataset.p1Version = '0.6.21';
+  box.dataset.p1Version = '0.6.22';
   box.classList.add('p1f-collapsed');
   box.innerHTML = `
     <div class="p1f-head">
-      <span class="p1f-title">P1 Autofill v0.6.21</span>
+      <span class="p1f-title">P1 Autofill v0.6.22</span>
       <span id="p1f-ats"></span>
       <span class="p1f-head-actions">
         <button id="p1f-stop-head" type="button" title="Stop autofill (Esc)" aria-label="Stop autofill" hidden>■</button>

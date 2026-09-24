@@ -1,0 +1,40 @@
+<!doctype html><html><body><form>
+<div class="input-row"><label for="country-codes-dropdownphoneNumber">Country Code</label><div class="cx-select-container"><input id="country-codes-dropdownphoneNumber" class="cx-select-input" role="combobox" aria-controls="country-codes-dropdownphoneNumber-listbox" aria-expanded="false" aria-haspopup="grid" aria-autocomplete="list" type="text"></div></div>
+<div class="input-row"><label for="phoneNumber">Phone Number</label><input id="phoneNumber" type="tel"></div>
+<div class="input-row"><label for="country-14">Country</label><div class="cx-select-container"><input id="country-14" class="cx-select-input" role="combobox" aria-controls="country-14-listbox" aria-expanded="false" aria-haspopup="grid" aria-autocomplete="list" type="text"></div></div>
+<div class="input-row"><label for="city-18">City</label><div class="cx-select-container"><input id="city-18" class="cx-select-input" role="combobox" aria-controls="city-18-listbox" aria-expanded="false" aria-haspopup="grid" aria-autocomplete="list" type="text"></div></div>
+<div class="input-row"><label for="region1-20">County</label><div class="cx-select-container"><input id="region1-20" class="cx-select-input" role="combobox" aria-controls="region1-20-listbox" aria-expanded="false" aria-haspopup="grid" aria-autocomplete="list" type="text"></div></div>
+<div class="input-row"><label for="region2-21">State</label><div class="cx-select-container"><input id="region2-21" class="cx-select-input" role="combobox" aria-controls="region2-21-listbox" aria-expanded="false" aria-haspopup="grid" aria-autocomplete="list" type="text"></div></div>
+<div class="input-row"><label for="postalCode-22">Postal Code</label><div class="cx-select-container"><input id="postalCode-22" class="cx-select-input" role="combobox" aria-controls="postalCode-22-listbox" aria-expanded="false" aria-haspopup="grid" aria-autocomplete="list" type="text"></div></div>
+<div class="input-row"><label for="US-STANDARD-ORA_GENDER-STANDARD-7">Gender</label><div class="cx-select-container"><input id="US-STANDARD-ORA_GENDER-STANDARD-7" class="cx-select-input" role="combobox" aria-controls="US-STANDARD-ORA_GENDER-STANDARD-7-listbox" aria-expanded="false" aria-haspopup="grid" aria-autocomplete="list" type="text"></div></div>
+<div class="input-row"><label for="US-STANDARD-ORA_VETERAN_STATUS-STANDARD-10">Veteran Status</label><div class="cx-select-container"><input id="US-STANDARD-ORA_VETERAN_STATUS-STANDARD-10" class="cx-select-input" role="combobox" aria-controls="US-STANDARD-ORA_VETERAN_STATUS-STANDARD-10-listbox" aria-expanded="false" aria-haspopup="grid" aria-autocomplete="list" type="text"></div></div>
+<button type="submit">Submit</button></form>
+<script>
+const codes=['+1 (American Samoa)','+1 (Anguilla)','+1 (Antigua and Barbuda)','+1 (Bahamas)','+1 (Barbados)','+1 (Canada)','+1 (United States)','+91 (India)','+672 (Norfolk Island)'];
+const cities=['Baltimore Highlands, Baltimore, MD','Baltimore, Anne Arundel, MD','Baltimore, Baltimore (Ind City), MD','Baltimore, Baltimore City, MD','Baltimore, Baltimore, MD','Baltimore, Fairfield, OH','Baltimore, Windsor, VT','Aaron, Clinton, KY'];
+const zips=['21210, Baltimore, Baltimore (Ind City), MD','21210, Baltimore, Baltimore City, MD','21210, Baltimore, Baltimore, MD','21211, Baltimore, Baltimore City, MD'];
+const DATA={'country-codes-dropdownphoneNumber':codes,'country-14':['United States','United States Minor Outlying Islands','India'],
+ 'city-18':cities,'region1-20':()=>[], 'region2-21':()=>[], 'postalCode-22':zips,
+ 'US-STANDARD-ORA_GENDER-STANDARD-7':['Female','I do not wish to disclose','Male'],
+ 'US-STANDARD-ORA_VETERAN_STATUS-STANDARD-10':['I am a protected veteran','I am not a protected veteran','I do not wish to answer']};
+function rows(id){const d=DATA[id];return typeof d==='function'?d():d;}
+function render(id){const inp=document.getElementById(id);let lb=document.getElementById(id+'-listbox');
+ if(!lb){lb=document.createElement('div');lb.id=id+'-listbox';lb.className='cx-select__list';inp.parentElement.appendChild(lb);}
+ const q=inp.value.trim().toLowerCase();let list=rows(id).filter(t=>!q||t.toLowerCase().includes(q));
+ lb.innerHTML='';
+ if(!list.length){lb.setAttribute('role','status');const n=document.createElement('div');n.className='cx-select__list-item--no-results';n.textContent='No results were found.';lb.appendChild(n);}
+ else{lb.setAttribute('role','grid');list.slice(0,5).forEach(t=>{const r=document.createElement('div');r.setAttribute('role','row');const c=document.createElement('div');c.setAttribute('role','gridcell');c.textContent=t;r.appendChild(c);
+  r.addEventListener('click',()=>choose(id,t));lb.appendChild(r);});}
+ inp.setAttribute('aria-expanded','true');}
+function close_(id){const lb=document.getElementById(id+'-listbox');if(lb)lb.remove();document.getElementById(id).setAttribute('aria-expanded','false');}
+function choose(id,t){const inp=document.getElementById(id);
+ if(id==='postalCode-22'){const [z,c,co,st]=t.split(',').map(x=>x.trim());inp.value=z;document.getElementById('city-18').value=c;document.getElementById('region1-20').value=co;document.getElementById('region2-21').value=st;}
+ else if(id==='city-18'){const [c,co,st]=t.split(',').map(x=>x.trim());inp.value=c;document.getElementById('region1-20').value=co;document.getElementById('region2-21').value=st;}
+ else inp.value=t;
+ close_(id);}
+Object.keys(DATA).forEach(id=>{const inp=document.getElementById(id);
+ inp.addEventListener('keydown',e=>{if(e.key==='ArrowDown')render(id);if(e.key==='Escape')close_(id);});
+ inp.addEventListener('mousedown',()=>render(id));
+ inp.addEventListener('input',()=>render(id));});
+document.addEventListener('submit',e=>{e.preventDefault();document.body.dataset.sub='yes'});
+</script></body></html>

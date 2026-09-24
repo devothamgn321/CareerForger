@@ -1,0 +1,14 @@
+<!doctype html><html><body><form>
+<div data-automation-id="formField-gender" class="field"><label id="lg" for="bg">Gender</label><button type="button" id="bg" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="lg">Select One</button></div>
+<div data-automation-id="formField-veteran" class="field"><label id="lv" for="bv">Veteran Status</label><button type="button" id="bv" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="lv">Select One</button></div>
+<div data-automation-id="formField-sponsor" class="field"><label id="ls" for="bs">Will you now or in the future require sponsorship?</label><button type="button" id="bs" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="ls">Select One</button></div>
+<button type="submit">Submit</button></form>
+<script>
+const O={bg:['Female','Male','I do not wish to answer'],bv:['I am a protected veteran','I am not a protected veteran','I do not wish to answer'],bs:['Yes','No']};
+Object.keys(O).forEach(id=>{const b=document.getElementById(id);b.addEventListener('click',()=>{
+ document.querySelectorAll('ul[role=listbox]').forEach(u=>u.remove());document.querySelectorAll('[aria-expanded=true]').forEach(x=>x.setAttribute('aria-expanded','false'));
+ const ul=document.createElement('ul');ul.setAttribute('role','listbox');ul.id='popup-'+Math.random().toString(36).slice(2);
+ O[id].forEach(t=>{const li=document.createElement('li');li.setAttribute('role','option');li.textContent=t;li.addEventListener('click',()=>{b.textContent=t;b.setAttribute('aria-expanded','false');ul.remove();});ul.appendChild(li)});
+ document.body.appendChild(ul);b.setAttribute('aria-expanded','true');});});
+document.addEventListener('submit',e=>{e.preventDefault();document.body.dataset.sub='yes'});
+</script></body></html>

@@ -1,0 +1,33 @@
+<!doctype html><html><body><form>
+<div class="application-question"><label for="n">Full name</label><input id="n"></div>
+<div id="w1" class="select-shell application-question"><label id="l1" for="s1">Are you 18 years of age or older?</label>
+  <div class="select__single-value" id="v1"></div><input id="s1" role="combobox" aria-expanded="false" aria-labelledby="l1" autocomplete="off"></div>
+<div id="w2" class="select-shell application-question"><label id="l2" for="s2">Will you now or in the future require Visa Sponsorship?</label>
+  <div class="select__single-value" id="v2"></div><input id="s2" role="combobox" aria-expanded="false" aria-labelledby="l2" autocomplete="off"></div>
+<div id="w3" class="application-question oj-like"><label id="l3" for="s3">Veteran Status</label>
+  <div class="oj-single-value" id="v3"></div><input id="s3" role="combobox" aria-expanded="false" aria-labelledby="l3" autocomplete="off"></div>
+<div id="w0" class="select-shell application-question"><label id="l0" for="s0">Phone country</label>
+  <div class="select__single-value" id="v0"></div><input id="s0x" role="combobox" aria-expanded="false" aria-labelledby="l0" autocomplete="off"></div>
+<button type=submit>Submit application</button></form>
+<script>
+const OPTS={s0x:['United States +1','Norfolk Island +672'],s1:['Yes','No'],s2:['Yes','No'],s3:['I am not a protected veteran','I identify as one or more of the classifications of protected veteran','I don’t wish to answer']};
+function open_(id){const inp=document.getElementById(id);if(inp.getAttribute('aria-expanded')==='true')return;
+ const menu=document.createElement('div');menu.className='select__menu';
+ const lb=document.createElement('div');lb.id='react-select-'+id+'-listbox';lb.setAttribute('role','listbox');
+ OPTS[id].forEach((t,i)=>{const o=document.createElement('div');o.setAttribute('role','option');o.id='react-select-'+id+'-option-'+i;o.textContent=t;
+  o.addEventListener('mousedown',()=>{document.getElementById('v'+id.replace(/\D/g,'')).textContent=t;close_(id);});lb.appendChild(o)});
+ menu.appendChild(lb);inp.parentElement.appendChild(menu);inp.setAttribute('aria-expanded','true');inp.setAttribute('aria-controls',lb.id);}
+function close_(id){const inp=document.getElementById(id);inp.setAttribute('aria-expanded','false');inp.removeAttribute('aria-controls');inp.parentElement.querySelectorAll('.select__menu').forEach(m=>m.remove());}
+function openPortal(){const inp=document.getElementById('s3');if(inp.getAttribute('aria-expanded')==='true')return;
+ const pop=document.createElement('ul');pop.id='oj-popup-'+Math.random().toString(36).slice(2);pop.setAttribute('role','listbox');pop.className='oj-listbox-results';
+ OPTS.s3.forEach(t=>{const li=document.createElement('li');li.setAttribute('role','option');li.textContent=t;li.addEventListener('mousedown',()=>{document.getElementById('v3').textContent=t;inp.value=t;inp.setAttribute('aria-expanded','false');pop.remove();});pop.appendChild(li)});
+ document.body.appendChild(pop);inp.setAttribute('aria-expanded','true');}
+document.getElementById('s3').addEventListener('keydown',e=>{if(e.key==='ArrowDown')openPortal();});
+document.getElementById('s3').addEventListener('mousedown',()=>openPortal());
+['s1','s2','s0x'].forEach(id=>{const inp=document.getElementById(id);
+ inp.addEventListener('keydown',e=>{if(e.key==='ArrowDown')open_(id);if(e.key==='Escape')close_(id);});
+ inp.addEventListener('mousedown',()=>open_(id));
+ // NOTE: no click handler at all — a coordinate click can never open this control.
+});
+document.addEventListener('submit',e=>{e.preventDefault();document.body.dataset.sub='yes'});
+</script></body></html>

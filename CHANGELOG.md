@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-09-24 — P1 Autofill v0.6.22: general dropdown handling across portals
+
+### Added
+- Button-style pickers (`button[aria-haspopup=listbox]`, Workday/iCIMS style) are detected and
+  filled; they open with a plain click on the control itself (no screen coordinates).
+- `tests/browser/run_all.py`: browser regression suite with fixture pages for Oracle cx-select,
+  button pickers, React Select + portal menus with a stale foreign menu, and text-label cases.
+
+### Changed
+- Speed: when a dropdown's options are readable and none match even after typing, the second
+  pass is skipped; when the widget itself reports "No results", other spellings are skipped.
+  Worst case on the Oracle fixture went from 34 s to 10 s.
+
 ## 2026-09-24 — P1 Autofill v0.6.21: Oracle Recruiting Cloud dropdowns and address lookup
 
 ### Fixed
