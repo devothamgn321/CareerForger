@@ -46,7 +46,8 @@
     "company_referral": [],
     "sms_updates": [],
     "how_heard": [],
-    "onsite": []
+    "onsite": [],
+    "privacy_ack": []
   },
   "eeo": {
     "gender": [],

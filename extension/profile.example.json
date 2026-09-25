@@ -84,6 +84,11 @@
       "Company website",
       "LinkedIn",
       "Other"
+    ],
+    "privacy_ack": [
+      "I acknowledge",
+      "Yes",
+      "I agree"
     ]
   },
   "eeo": {

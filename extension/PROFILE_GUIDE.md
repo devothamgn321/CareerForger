@@ -61,6 +61,7 @@ Chrome picks up the change.
 | `relocate`, `onsite` | Willing to relocate / work on-site? | `["Yes"]` / `["No"]` |
 | `company_referral` | Were you referred? | `["Yes"]` / `["No"]` |
 | `sms_updates` | Opt in to text messages? | `["Yes"]` / `["No"]` |
+| `privacy_ack` | Privacy policy / applicant privacy acknowledgement (dropdown, buttons or checkbox) | e.g. `["I acknowledge", "Yes", "I agree"]`; blank = left for you |
 | `how_heard` | How did you hear about us? | e.g. `["Company careers page", "LinkedIn", "Other"]` |
 
 Free-text versions ("If so, please explain"):

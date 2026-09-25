@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-09-25 — P1 Autofill v0.6.25: privacy-policy acknowledgement (opt-in)
+
+### Added
+- `choices.privacy_ack`: when set, "Privacy Policy Acknowledgement" / "Applicant Privacy" /
+  "I have read and acknowledge the Privacy Policy" questions are answered (dropdown, buttons or
+  checkbox). Blank (the public default) leaves them for the human.
+
 ## 2026-09-25 — P1 Autofill v0.6.24
 
 ### Added

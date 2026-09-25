@@ -23,7 +23,8 @@ def profile(county=""):
     p["choices"].update(sponsorship=["Yes"])
     return p
 
-VAL = "e=>e.tagName==='BUTTON'?e.textContent.trim():(e.value!==undefined?e.value:e.textContent)"
+VAL = ("e=>e.type==='checkbox'?String(e.checked):(e.tagName==='BUTTON'?e.textContent.trim():"
+       "(e.value!==undefined?e.value:e.textContent))")
 CASES = [
     ("oracle_cx_select.html", profile("Baltimore City"), None, {
         "country-codes-dropdownphoneNumber": "+1 (United States)", "country-14": "United States",
@@ -40,10 +41,10 @@ CASES = [
         "v1": "Yes", "v2": "Yes", "v3": "I am not a protected veteran"}),
     ("greenhouse_filtering.html", profile(), None, {
         "country-value": "United States +1", "q_worked-value": "No", "q_sql-value": "Yes",
-        "q_lead-value": "", "q_trans-value": "I don't wish to answer", "q_priv-value": "",
+        "q_lead-value": "", "q_trans-value": "I don't wish to answer", "q_priv-value": "I acknowledge",
         "q_emp-value": "No", "q_race-value": "Asian"}),
     ("text_labels.html", profile(), None, {
-        "a": "Alex Example", "b": "F-1 OPT", "c": "", "d": "No", "e": "Yes"}),
+        "a": "Alex Example", "b": "F-1 OPT", "c": "", "d": "No", "e": "Yes", "pa": "true"}),
 ]
 
 async def main():
