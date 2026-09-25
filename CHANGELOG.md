@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-09-25 — P1 Autofill v0.6.24
+
+### Added
+- "Are you currently an employee at <Company>?" answers No (`current_employee`).
+- Readable logs: each dropdown logs `[field:<id>] "<question>" wants [...]` once, and a failed
+  dropdown logs the options it saw before typing instead of the empty filtered list.
+
 ## 2026-09-24 — P1 Autofill v0.6.23: fixes from a live DoorDash (Greenhouse) run
 
 ### Fixed

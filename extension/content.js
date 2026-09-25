@@ -172,6 +172,7 @@
       /(relative|family|friend).*(work|employ).*(company|here|us)/i,
       /employee\s+referral|referred\s+by\s+(an\s+)?employee/i
     ],
+    current_employee: [/are\s+you\s+(currently\s+)?(an?\s+)?(current\s+)?employee\s+(of|at|with)\b/i],
     prior_company_employment: [
       /currently,?\s+or\s+have\s+you\s+previously,?\s+worked\s+for/i,
       /have\s+you\s+(ever\s+)?(previously\s+)?worked\s+(for|at)\b/i,
@@ -328,6 +329,7 @@
       ['employment_eligibility_ack', /provide\s+documents.*(identity|employment\s+eligibility)/i],
       ['prior_company_employment', /currently,?\s+or\s+have\s+you\s+previously,?\s+worked\s+for|have\s+you\s+(ever\s+)?(previously\s+)?worked\s+(for|at)\b|(former|previous)\s+employee\s+of|previously\s+(been\s+)?employed\s+(by|at)/i],
       ['transgender', /identify\s+as\s+transgender|\btransgender\b/i],
+      ['current_employee', /are\s+you\s+(currently\s+)?(an?\s+)?(current\s+)?employee\s+(of|at|with)\b|currently\s+employed\s+(by|at|with)\s+(an?\s+)?[\w&.\- ]{1,40}\s+(company|agency|affiliate)/i],
       ['skill_experience', /^\s*do\s+you\s+have\s+(any\s+)?(professional\s+|hands[- ]on\s+|working\s+)?(experience|proficiency)\s+(with|in|using)\s+[a-z0-9+#.\/ -]{1,40}\??\s*\*?\s*$|^\s*do\s+you\s+have\s+[a-z0-9+#.\/ -]{1,40}\s+experience\??\s*\*?\s*$/i],
       ['lgbtq_identity', /lgbt2?qia|lgbtq|member\s+of\s+the\s+lgbt/i]
     ];
@@ -821,9 +823,13 @@
           }
         }
         el.dataset.p1TrustedOpen = JSON.stringify(trustedOpen);
+        if (attempt === 0 && w === wantedArr[0]) {
+          log(`[field:${el.id || 'anonymous'}] "${String(labelTextFor(el) || '').replace(/\s+/g, ' ').trim().slice(0, 70)}" wants ${JSON.stringify(wantedArr.slice(0, 4))}`);
+        }
         log(`[trusted-open:${el.id || 'anonymous'}] ${JSON.stringify(trustedOpen)}`);
         let options = await waitForComboboxOptions(el, 2200);
         const emptyBeforeTyping = !options.length;
+        const untypedOptions = options.map((o) => String(o.textContent || '').replace(/\s+/g, ' ').trim()).filter(Boolean);
         let hit = chooseComboboxOption(options, w, typed);
 
         if (!hit && el.tagName === 'INPUT') {
@@ -859,9 +865,9 @@
         if (!hit) {
           log(
             `[trusted-options:${el.id || 'anonymous'}] ` +
-            JSON.stringify(options.map((option) =>
+            JSON.stringify((options.length ? options.map((option) =>
               String(option.textContent || '').replace(/\s+/g, ' ').trim()
-            ).filter(Boolean).slice(0, 25))
+            ).filter(Boolean) : untypedOptions).slice(0, 25))
           );
         }
         // The list was readable and nothing matched even after typing: a second pass cannot
@@ -1228,7 +1234,7 @@
       manual_legal: null,
       us_citizen: p.choices.us_citizen, permanent_resident: p.choices.permanent_resident,
       security_clearance: p.choices.security_clearance, company_referral: p.choices.company_referral,
-      prior_company_employment: ['No'],
+      prior_company_employment: ['No'], current_employee: ['No'],
       sms_updates: p.choices.sms_updates,
       eligible_state: ['Yes'], truth_declaration: ['Yes'], employment_eligibility_ack: ['Yes'],
       gender: p.eeo.gender, race: p.eeo.race, hispanic: p.eeo.hispanic, veteran: p.eeo.veteran, disability: p.eeo.disability,
@@ -1631,7 +1637,7 @@
       'onsite', 'work_auth', 'relocate',
       'located_us', 'age_18',
       'eligible_state', 'truth_declaration', 'employment_eligibility_ack',
-      'us_citizen', 'permanent_resident', 'security_clearance', 'company_referral', 'prior_company_employment',
+      'us_citizen', 'permanent_resident', 'security_clearance', 'company_referral', 'prior_company_employment', 'current_employee',
       'sms_updates',
       'how_heard', 'gender', 'race', 'hispanic', 'sexual_orientation', 'lgbtq_identity', 'transgender', 'veteran', 'disability'
     ]) {
@@ -1764,11 +1770,11 @@
 
   const box = document.createElement('div');
   box.id = 'p1f-sidebar';
-  box.dataset.p1Version = '0.6.23';
+  box.dataset.p1Version = '0.6.24';
   box.classList.add('p1f-collapsed');
   box.innerHTML = `
     <div class="p1f-head">
-      <span class="p1f-title">P1 Autofill v0.6.23</span>
+      <span class="p1f-title">P1 Autofill v0.6.24</span>
       <span id="p1f-ats"></span>
       <span class="p1f-head-actions">
         <button id="p1f-stop-head" type="button" title="Stop autofill (Esc)" aria-label="Stop autofill" hidden>■</button>

@@ -18,7 +18,8 @@ def profile(county=""):
     p = json.loads((ROOT / "extension" / "profile.example.json").read_text())
     p["address"].update(city="Baltimore", state="Maryland", zip="21210", country="United States", county=county)
     p.update(phone_country="United States", phone_country_code="+1")
-    p["eeo"].update(gender=["Male"], veteran=["I am not a protected veteran"])
+    p["eeo"].update(gender=["Male"], veteran=["I am not a protected veteran"],
+                    race=["Asian", "Asian (Not Hispanic or Latino)", "South Asian"])
     p["choices"].update(sponsorship=["Yes"])
     return p
 
@@ -39,7 +40,8 @@ CASES = [
         "v1": "Yes", "v2": "Yes", "v3": "I am not a protected veteran"}),
     ("greenhouse_filtering.html", profile(), None, {
         "country-value": "United States +1", "q_worked-value": "No", "q_sql-value": "Yes",
-        "q_lead-value": "", "q_trans-value": "I don't wish to answer", "q_priv-value": ""}),
+        "q_lead-value": "", "q_trans-value": "I don't wish to answer", "q_priv-value": "",
+        "q_emp-value": "No", "q_race-value": "Asian"}),
     ("text_labels.html", profile(), None, {
         "a": "Alex Example", "b": "F-1 OPT", "c": "", "d": "No", "e": "Yes"}),
 ]
